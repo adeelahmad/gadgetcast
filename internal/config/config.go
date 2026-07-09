@@ -1,21 +1,11 @@
-// agentic:shim — minimal WRONG-body compile shim so RED tests fail by assertion.
-// Replaced by real production code during SCAFFOLD/GREEN. Stdlib encoding/json only.
+// Package config parses and validates the GadgetCast configuration document.
+// Stdlib encoding/json only.
 package config
 
 // Bind-interface modes.
 const (
 	BindAll           = "all"
 	BindTailscaleOnly = "tailscale-only"
-)
-
-// Documented defaults (README §3.1/§3.2/§4, decision #3).
-const (
-	DefaultVideoPrimaryFormat  = "MJPEG"
-	DefaultVideoFallbackFormat = "YUYV"
-	DefaultAudioCodec          = "Opus"
-	DefaultAudioSampleRate     = 48000
-	DefaultPINAttemptLimit     = 5
-	DefaultPINRequired         = true
 )
 
 // HTTPSConfig models the TLS precondition (README §3.2/§4).
@@ -67,14 +57,8 @@ type Config struct {
 	Audio AudioConfig `json:"audio"`
 }
 
-// Parse is a shim with a WRONG body: it ignores its input, applies no defaults,
-// and never reports a parse error — so every RED test fails by assertion.
+// Parse unmarshals a JSON configuration document, fills documented defaults for
+// omitted fields, and returns a typed parse error on malformed input.
 func Parse(_ []byte) (Config, error) {
-	return Config{}, nil
-}
-
-// Validate is a shim with a WRONG body: it always reports success, so every
-// negative-path RED test fails by assertion.
-func (c Config) Validate() error {
-	return nil
+	panic("SUB-AGENT-TODO: json.Unmarshal the doc, return a typed parse error on malformed JSON, then apply documented defaults (see defaults.go)")
 }
