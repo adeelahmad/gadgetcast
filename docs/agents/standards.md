@@ -76,6 +76,17 @@ Every bullet cites the local rule file that binds it plus, where the local file 
 | **lint (extended, static)** | `staticcheck ./...` | n/a — **not installed**, OPTIONAL | OPTIONAL / not on PATH |
 | **security (extended)** | `gosec ./...` | n/a — **not installed**, OPTIONAL | OPTIONAL / not on PATH |
 
+**Machine-readable gate commands** (parsed verbatim by `_gatelib.sh:run_standards_matrix` — every non-blank line inside the fenced block immediately below is `eval`'d in order, under the repo root, as the actual GREEN/FINAL gate run; the table above is the human-readable rendering of these same commands, do not let them drift apart):
+
+```bash
+gofmt -l .
+go vet ./...
+go build ./...
+go test ./...
+go test ./... -coverprofile=coverage.out
+go tool cover -func=coverage.out
+```
+
 Notes:
 - Before any gate runs on this repo for the first time: `go mod init <module>` must have been run (no `go.mod` exists yet). Source: `docs/agents/memory.md` M-001.
 - Race detection (`go test -race ./...`, per `rules/golang/testing.md`) is advisory for Sprint 0 and becomes a HARD gate the moment a package spawns goroutines/channels across the capture → resample → gadget-write pipeline described in `README.md` §3 (Architecture).

@@ -35,3 +35,4 @@ go.work.sum
 .agentic/
 .transcripts/
 docs/agents/.agentic/
+.claude/
