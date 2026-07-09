@@ -30,3 +30,8 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# agentic-agile pipeline (never committed / never merged to worktree)
+.agentic/
+.transcripts/
+docs/agents/.agentic/
