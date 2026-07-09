@@ -2,6 +2,11 @@
 // Stdlib encoding/json only.
 package config
 
+import (
+	"encoding/json"
+	"fmt"
+)
+
 // Bind-interface modes.
 const (
 	BindAll           = "all"
@@ -59,6 +64,10 @@ type Config struct {
 
 // Parse unmarshals a JSON configuration document, fills documented defaults for
 // omitted fields, and returns a typed parse error on malformed input.
-func Parse(_ []byte) (Config, error) {
-	panic("SUB-AGENT-TODO: json.Unmarshal the doc, return a typed parse error on malformed JSON, then apply documented defaults (see defaults.go)")
+func Parse(doc []byte) (Config, error) {
+	var cfg Config
+	if err := json.Unmarshal(doc, &cfg); err != nil {
+		return Config{}, fmt.Errorf("config: parse: %w", err)
+	}
+	return applyDefaults(cfg), nil
 }
