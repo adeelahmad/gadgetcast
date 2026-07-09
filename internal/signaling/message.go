@@ -68,30 +68,16 @@ type ErrorMessage struct {
 	Reason string
 }
 
-func (JoinMessage) Type() MessageType {
-	panic("SUB-AGENT-TODO: GREEN returns TypeJoin")
-}
+func (JoinMessage) Type() MessageType { return TypeJoin }
 
-func (OfferMessage) Type() MessageType {
-	panic("SUB-AGENT-TODO: GREEN returns TypeOffer")
-}
+func (OfferMessage) Type() MessageType { return TypeOffer }
 
-func (AnswerMessage) Type() MessageType {
-	panic("SUB-AGENT-TODO: GREEN returns TypeAnswer")
-}
+func (AnswerMessage) Type() MessageType { return TypeAnswer }
 
-func (IceCandidateMessage) Type() MessageType {
-	panic("SUB-AGENT-TODO: GREEN returns TypeIceCandidate")
-}
+func (IceCandidateMessage) Type() MessageType { return TypeIceCandidate }
 
-func (SwitchSourceMessage) Type() MessageType {
-	panic("SUB-AGENT-TODO: GREEN returns TypeSwitchSource")
-}
+func (SwitchSourceMessage) Type() MessageType { return TypeSwitchSource }
 
-func (OnAirStateMessage) Type() MessageType {
-	panic("SUB-AGENT-TODO: GREEN returns TypeOnAirState")
-}
+func (OnAirStateMessage) Type() MessageType { return TypeOnAirState }
 
-func (ErrorMessage) Type() MessageType {
-	panic("SUB-AGENT-TODO: GREEN returns TypeError")
-}
+func (ErrorMessage) Type() MessageType { return TypeError }
