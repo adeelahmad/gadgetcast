@@ -30,3 +30,5 @@
 2026-07-09T23:00:46Z wave-2 green S0-02 complete
 2026-07-09T23:02:52Z wave-2 green S0-03 complete
 2026-07-09T23:03:25Z wave-2 gate S0-ALL module-green-91pct-cov
+2026-07-09T23:07:16Z wave-2 review S0-ALL clean-ctxsymbols-go-falsepos-escalated
+2026-07-09T23:07:16Z sprint final-gate S0-ALL start

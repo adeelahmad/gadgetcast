@@ -1,6 +1,6 @@
 ---
 type: memory
-updated_at: "2026-07-09T22:36:43Z"
+updated_at: "2026-07-09T23:07:16Z"
 last_retro_sprint: 0
 ---
 
@@ -15,3 +15,4 @@ last_retro_sprint: 0
 | M-005 | green-worker  | `standards.md` gate matrix must live in a FENCED code block: `run_standards_matrix` parses fences only and ignores markdown tables, falling back to the default (Rust) matrix that fails a Go repo. Keep a fenced Go command block in standards.md.  | execution | 1 | 2026-07-09 |
 | M-006 | red-worker    | In `.agentic/task.env`, write SCOPE_GLOBS QUOTED with a subtree glob: `SCOPE_GLOBS="internal/pkg internal/pkg/*"`. A bare dir path doesn't match files under the gate's case-glob matcher; an unquoted multi-value line breaks `. task.env` sourcing.  | execution | 1 | 2026-07-09 |
 | M-007 | scaffolder    | `SCAFFOLD_SYMBOLS` is a literal space-separated list of BARE symbol names (ctx-symbols keys Go methods by bare name, e.g. `String` not `ClientID.String`), NOT a file path. Set it to the real symbols or leave empty to use `.agentic/scaffold-symbols`.  | execution | 1 | 2026-07-09 |
+| M-008 | structural-reviewer | `ctx-symbols conflicts --tree` is Rust-semantic and false-flags HIGH on Go: same-named methods on different receivers (`Type`/`Validate`), package-scoped repeats (`New`/`ErrUnknownClient`), type-vs-accessor (`State`), and even local vars/test helpers; `Test*` funcs show as LOW unreferenced. Do the structural review via `go vet`/`go build` + import-graph reasoning; escalate the gate's Go-incompatibility, don't HALT on false HIGHs. | execution | 1 | 2026-07-09 |
