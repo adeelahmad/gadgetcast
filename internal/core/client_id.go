@@ -1,6 +1,9 @@
 package core
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 // ErrInvalidClientID is the sentinel returned when a ClientID cannot be built.
 var ErrInvalidClientID = errors.New("core: invalid client id")
@@ -12,21 +15,25 @@ type ClientID struct {
 }
 
 // NewClientID builds a ClientID from raw input.
-func NewClientID(_ string) (ClientID, error) {
-	panic("SUB-AGENT-TODO: trim input; reject empty/whitespace-only with ErrInvalidClientID returning zero ClientID; otherwise return ClientID carrying the trimmed value")
+func NewClientID(raw string) (ClientID, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ClientID{}, ErrInvalidClientID
+	}
+	return ClientID{value: trimmed}, nil
 }
 
 // String returns the underlying client identity string.
 func (c ClientID) String() string {
-	panic("SUB-AGENT-TODO: return the stored value")
+	return c.value
 }
 
 // IsValid reports whether the ClientID holds a real (non-empty) identity.
 func (c ClientID) IsValid() bool {
-	panic("SUB-AGENT-TODO: return true only when value is non-empty (zero value must be false)")
+	return c.value != ""
 }
 
 // IsZero reports whether the ClientID is the zero value.
 func (c ClientID) IsZero() bool {
-	panic("SUB-AGENT-TODO: return true when value is empty (the zero value)")
+	return c.value == ""
 }
