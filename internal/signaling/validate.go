@@ -1,34 +1,52 @@
 package signaling
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // ErrValidation is the sentinel every message's Validate wraps on bad input.
 var ErrValidation = errors.New("signaling: validation error")
 
 func (m JoinMessage) Validate() error {
-	panic("SUB-AGENT-TODO: GREEN rejects the zero Client with an ErrValidation-wrapped error")
+	if m.Client.IsZero() {
+		return fmt.Errorf("join: missing client id: %w", ErrValidation)
+	}
+	return nil
 }
 
 func (m OfferMessage) Validate() error {
-	panic("SUB-AGENT-TODO: GREEN rejects an empty SDP with an ErrValidation-wrapped error")
+	if m.SDP == "" {
+		return fmt.Errorf("offer: missing sdp: %w", ErrValidation)
+	}
+	return nil
 }
 
 func (m AnswerMessage) Validate() error {
-	panic("SUB-AGENT-TODO: GREEN rejects an empty SDP with an ErrValidation-wrapped error")
+	if m.SDP == "" {
+		return fmt.Errorf("answer: missing sdp: %w", ErrValidation)
+	}
+	return nil
 }
 
 func (m IceCandidateMessage) Validate() error {
-	panic("SUB-AGENT-TODO: GREEN rejects an empty Candidate with an ErrValidation-wrapped error")
+	if m.Candidate == "" {
+		return fmt.Errorf("ice-candidate: missing candidate: %w", ErrValidation)
+	}
+	return nil
 }
 
 func (m SwitchSourceMessage) Validate() error {
-	panic("SUB-AGENT-TODO: GREEN rejects the zero Target with an ErrValidation-wrapped error")
+	if m.Target.IsZero() {
+		return fmt.Errorf("switch-source: missing target: %w", ErrValidation)
+	}
+	return nil
 }
 
 func (m OnAirStateMessage) Validate() error {
-	panic("SUB-AGENT-TODO: GREEN accepts a well-formed on-air-state message")
+	return nil
 }
 
 func (m ErrorMessage) Validate() error {
-	panic("SUB-AGENT-TODO: GREEN accepts a well-formed error message")
+	return nil
 }
