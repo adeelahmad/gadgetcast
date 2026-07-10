@@ -1,10 +1,7 @@
-// agentic:shim
-// Package drift is a resampler drift controller. This file is a RED-phase
-// compile shim: the symbols exist so the tests build, but every body is
-// deliberately WRONG so each test fails by assertion, not by a missing symbol.
+// Package drift is a resampler drift controller: it turns an observed buffer
+// fill fraction into a bounded resample ratio via a proportional control law
+// smoothed by an exponential moving average.
 package drift
-
-import "math"
 
 // Documented default control-law parameters (D8).
 const (
@@ -33,25 +30,21 @@ type Controller struct {
 type Option func(*Controller)
 
 // WithKp overrides the proportional gain.
-func WithKp(kp float64) Option { return func(c *Controller) { _ = kp } }
+func WithKp(kp float64) Option { return func(c *Controller) { c.Kp = kp } }
 
 // WithTarget overrides the target fill fraction.
-func WithTarget(target float64) Option { return func(c *Controller) { _ = target } }
+func WithTarget(target float64) Option { return func(c *Controller) { c.Target = target } }
 
 // WithClamp overrides the symmetric ratio-deviation bound.
-func WithClamp(bound float64) Option { return func(c *Controller) { _ = bound } }
+func WithClamp(bound float64) Option { return func(c *Controller) { c.Clamp = bound } }
 
-// New constructs a Controller. WRONG body: ignores defaults and options, so
-// construction/injection assertions fail.
+// New constructs a Controller seeded with the documented defaults, then applies
+// any options.
 func New(opts ...Option) *Controller {
-	_ = opts
-	return &Controller{}
+	panic("SUB-AGENT-TODO: seed Controller with Default* params, apply opts, return it")
 }
 
 // Update returns the resample ratio for the latest fill sample over interval dt.
-// WRONG body: returns NaN so every ratio assertion fails.
 func (c *Controller) Update(fill, dt float64) float64 {
-	_ = fill
-	_ = dt
-	return math.NaN()
+	panic("SUB-AGENT-TODO: EMA-smooth fill (Tau/dt), apply deadband, proportional Kp*error, clamp to 1±Clamp")
 }
