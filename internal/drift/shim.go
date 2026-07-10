@@ -1,0 +1,57 @@
+// agentic:shim
+// Package drift is a resampler drift controller. This file is a RED-phase
+// compile shim: the symbols exist so the tests build, but every body is
+// deliberately WRONG so each test fails by assertion, not by a missing symbol.
+package drift
+
+import "math"
+
+// Documented default control-law parameters (D8).
+const (
+	// DefaultKp is the proportional gain applied to the smoothed fill error.
+	DefaultKp = 0.5
+	// DefaultTarget is the target buffer fill fraction the controller holds.
+	DefaultTarget = 0.5
+	// DefaultClamp is the symmetric bound on the resample-ratio deviation (±0.02).
+	DefaultClamp = 0.02
+	// DefaultDeadband zeroes corrections for fill errors smaller than this.
+	DefaultDeadband = 0.01
+	// DefaultTau is the EMA time constant (seconds) that damps single-sample noise.
+	DefaultTau = 2.0
+)
+
+// Controller computes a resample ratio from the observed buffer fill fraction.
+type Controller struct {
+	Kp       float64
+	Target   float64
+	Clamp    float64
+	Deadband float64
+	Tau      float64
+}
+
+// Option configures a Controller at construction time.
+type Option func(*Controller)
+
+// WithKp overrides the proportional gain.
+func WithKp(kp float64) Option { return func(c *Controller) { _ = kp } }
+
+// WithTarget overrides the target fill fraction.
+func WithTarget(target float64) Option { return func(c *Controller) { _ = target } }
+
+// WithClamp overrides the symmetric ratio-deviation bound.
+func WithClamp(bound float64) Option { return func(c *Controller) { _ = bound } }
+
+// New constructs a Controller. WRONG body: ignores defaults and options, so
+// construction/injection assertions fail.
+func New(opts ...Option) *Controller {
+	_ = opts
+	return &Controller{}
+}
+
+// Update returns the resample ratio for the latest fill sample over interval dt.
+// WRONG body: returns NaN so every ratio assertion fails.
+func (c *Controller) Update(fill, dt float64) float64 {
+	_ = fill
+	_ = dt
+	return math.NaN()
+}
