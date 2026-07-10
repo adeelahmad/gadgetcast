@@ -1,4 +1,3 @@
-// agentic:shim
 package session
 
 import (
@@ -48,15 +47,10 @@ type Hub struct {
 
 // New builds a Hub over the given pairing manager and switcher.
 func New(pm *pairing.Manager, sw *switcher.Switcher) *Hub {
-	return &Hub{pm: pm, sw: sw}
+	panic("SUB-AGENT-TODO: construct Hub over pairing.Manager + switcher.Switcher with an ordered client roster")
 }
 
 // Process handles one event and returns the effects to deliver.
-//
-// SHIM: intentionally wrong — it mutates no injected state and always returns a
-// single bogus non-error effect. Every behavioral test therefore fails BY
-// ASSERTION (wrong effect list / wrong effect type / unchanged pm-sw state),
-// never by a missing symbol and never by trivially passing a "no effects" case.
 func (h *Hub) Process(ev Event) []Effect {
-	return []Effect{{To: core.ClientID{}, Msg: signaling.JoinMessage{}}}
+	panic("SUB-AGENT-TODO: route Inbound/SubmitPIN/Disconnect over pm+sw; broadcast in roster order; opaque offer/ice relay to peers; surface pairing/switcher sentinels as ErrorMessage; decode never panics")
 }
