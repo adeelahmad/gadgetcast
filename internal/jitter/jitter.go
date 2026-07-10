@@ -25,35 +25,71 @@ type Frame struct {
 
 // Buffer is a reordering jitter buffer.
 type Buffer struct {
-	capacity int
+	capacity  int
+	cursor    int
+	frames    map[int]Frame
+	underruns int
+	overruns  int
 }
 
 // New builds a Buffer with the given capacity.
 func New(capacity int) *Buffer {
-	panic("SUB-AGENT-TODO: construct a Buffer with the given capacity and an initialized play cursor")
+	if capacity <= 0 {
+		capacity = DefaultCapacity
+	}
+	return &Buffer{
+		capacity: capacity,
+		frames:   make(map[int]Frame),
+	}
 }
 
 // Push buffers a frame for playout, returning its disposition.
 func (b *Buffer) Push(f Frame) PushResult {
-	panic("SUB-AGENT-TODO: buffer frame in playout order; reject at capacity (Overrun), drop seq<=cursor (DroppedLate) and buffered dup (DroppedDuplicate)")
+	if f.Seq < b.cursor {
+		return DroppedLate
+	}
+	if _, ok := b.frames[f.Seq]; ok {
+		return DroppedDuplicate
+	}
+	if len(b.frames) >= b.capacity {
+		b.overruns++
+		return Overrun
+	}
+	b.frames[f.Seq] = f
+	return OK
 }
 
 // Pop returns the next frame in playout order and advances the cursor.
 func (b *Buffer) Pop() (Frame, bool) {
-	panic("SUB-AGENT-TODO: emit next in-order frame and advance cursor; on empty return (Frame{}, false) and count an underrun")
+	if len(b.frames) == 0 {
+		b.underruns++
+		return Frame{}, false
+	}
+	next := 0
+	first := true
+	for seq := range b.frames {
+		if first || seq < next {
+			next = seq
+			first = false
+		}
+	}
+	f := b.frames[next]
+	delete(b.frames, next)
+	b.cursor = next + 1
+	return f, true
 }
 
 // Len is the number of buffered frames.
 func (b *Buffer) Len() int {
-	panic("SUB-AGENT-TODO: return the count of currently buffered frames")
+	return len(b.frames)
 }
 
 // Underruns counts pops on an empty buffer.
 func (b *Buffer) Underruns() int {
-	panic("SUB-AGENT-TODO: return the cumulative count of pops on an empty buffer")
+	return b.underruns
 }
 
 // Overruns counts pushes rejected at capacity.
 func (b *Buffer) Overruns() int {
-	panic("SUB-AGENT-TODO: return the cumulative count of pushes rejected at capacity")
+	return b.overruns
 }
