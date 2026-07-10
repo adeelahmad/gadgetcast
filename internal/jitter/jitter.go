@@ -1,4 +1,3 @@
-// agentic:shim
 package jitter
 
 // DefaultCapacity is the documented default jitter-buffer capacity used when a
@@ -31,34 +30,30 @@ type Buffer struct {
 
 // New builds a Buffer with the given capacity.
 func New(capacity int) *Buffer {
-	return &Buffer{capacity: capacity}
+	panic("SUB-AGENT-TODO: construct a Buffer with the given capacity and an initialized play cursor")
 }
 
-// Push buffers a frame for playout.
-//
-// SHIM: always reports OK regardless of state.
+// Push buffers a frame for playout, returning its disposition.
 func (b *Buffer) Push(f Frame) PushResult {
-	return OK
+	panic("SUB-AGENT-TODO: buffer frame in playout order; reject at capacity (Overrun), drop seq<=cursor (DroppedLate) and buffered dup (DroppedDuplicate)")
 }
 
-// Pop returns the next frame in playout order.
-//
-// SHIM: always reports a zero frame as present.
+// Pop returns the next frame in playout order and advances the cursor.
 func (b *Buffer) Pop() (Frame, bool) {
-	return Frame{}, true
+	panic("SUB-AGENT-TODO: emit next in-order frame and advance cursor; on empty return (Frame{}, false) and count an underrun")
 }
 
 // Len is the number of buffered frames.
-//
-// SHIM: always zero.
-func (b *Buffer) Len() int { return 0 }
+func (b *Buffer) Len() int {
+	panic("SUB-AGENT-TODO: return the count of currently buffered frames")
+}
 
 // Underruns counts pops on an empty buffer.
-//
-// SHIM: always zero.
-func (b *Buffer) Underruns() int { return 0 }
+func (b *Buffer) Underruns() int {
+	panic("SUB-AGENT-TODO: return the cumulative count of pops on an empty buffer")
+}
 
 // Overruns counts pushes rejected at capacity.
-//
-// SHIM: always zero.
-func (b *Buffer) Overruns() int { return 0 }
+func (b *Buffer) Overruns() int {
+	panic("SUB-AGENT-TODO: return the cumulative count of pushes rejected at capacity")
+}
