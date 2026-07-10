@@ -1,0 +1,11 @@
+2026-07-10T00:11:11Z wave-1 red S1-ALL start
+2026-07-10T00:11:59Z wave-1 red S1-01 start
+2026-07-10T00:11:59Z wave-1 red S1-02 start
+2026-07-10T00:11:59Z wave-1 red S1-03 start
+2026-07-10T00:17:43Z wave-1 red S1-02 complete
+2026-07-10T00:17:44Z wave-1 scaffold S1-02 start
+2026-07-10T00:21:01Z S1-02 scaffolder ok 7 symbols stubbed panic+TODO; shim.go deleted; build+vet clean; selfcheck PASS
+2026-07-10T00:21:36Z wave-1 scaffold S1-02 complete
+2026-07-10T00:21:36Z wave-1 green S1-02 start
+2026-07-10T00:22:20Z wave-1 red S1-01 complete
+2026-07-10T00:22:20Z wave-1 scaffold S1-01 start
