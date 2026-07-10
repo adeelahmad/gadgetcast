@@ -35,3 +35,50 @@ Wrote all 20 failing tests for `internal/session` at their exact `internal/sessi
 
 ### Next
 Scaffold the named symbols in `internal/session`: replace the `shim.go` `Process` wrong-body with `panic("SUB-AGENT-TODO: ...")` stubs (type `Hub`, `New`, `Event`/`Inbound`/`SubmitPIN`/`Disconnect`, `Effect`, `(*Hub).Process`), delete the `// agentic:shim` marker, then hand to GREEN to implement event routing over `pairing.Manager` + `switcher.Switcher` (ordered roster for broadcast/relay, opaque offer/ice fan-out to peers, ErrorMessage surfacing of the pairing/switcher sentinels, decode-never-panics).
+
+## S1-01 · attempt 1 · scaffolder · 2026-07-10T00:24:38Z
+status: ok
+
+### Summary
+Turned the verified RED `// agentic:shim` file into the single canonical production skeleton `internal/session/session.go` and deleted `internal/session/shim.go` (no `agentic:shim` marker remains). Carried across the real declarations exactly as the RED tests reference them — `type Hub`, the closed `Event` interface with the unexported `isEvent()` marker, the `Inbound{From core.ClientID; Data []byte}` / `SubmitPIN{Client core.ClientID; PIN string}` / `Disconnect{Client core.ClientID}` events (each implementing `isEvent()`), and `Effect{To core.ClientID; Msg signaling.Message}`. Interface and struct decls have no body. Both behavioral entry points are panic-TODO only: `New(pm *pairing.Manager, sw *switcher.Switcher) *Hub` and `(*Hub).Process(Event) []Effect` each `panic("SUB-AGENT-TODO: ...")` with a recipe for GREEN, implementing zero logic. Imports are limited to `internal/core`, `internal/signaling`, `internal/pairing`, `internal/switcher`. Wrote bare unique symbol names to `.agentic/scaffold-symbols` (`Hub`, `Effect`, `Inbound`, `Disconnect`, `Process`), excluding `New` and `SubmitPIN` per M-007 (both recur across packages — `pairing.Manager` has a `SubmitPIN` method). `gofmt -w` clean; `go build ./internal/session` exit 0; `go vet ./internal/session` clean.
+
+### Scaffold
++ create Hub @ internal/session/session.go
++ create Event @ internal/session/session.go
++ create Inbound @ internal/session/session.go
++ create SubmitPIN (panic-free struct; excluded from uniqueness list — bare name collides with pairing.Manager.SubmitPIN, per M-007) @ internal/session/session.go
++ create Disconnect @ internal/session/session.go
++ create Effect @ internal/session/session.go
++ create New (panic-TODO; excluded from uniqueness list per M-007) @ internal/session/session.go
++ create Process (panic-TODO) @ internal/session/session.go
+- delete internal/session/shim.go (dropped // agentic:shim)
+
+### Result
+| Check | Status | Detail |
+|---|---|---|
+| stubs panic+TODO | PASS | New + Process bodies are panic("SUB-AGENT-TODO: ...") only |
+| symbols created once | PASS | 5 unique bare names + New/SubmitPIN excluded (cross-pkg), single canonical copy in internal/session |
+| shim removed | PASS | shim.go deleted; no `agentic:shim` marker remains |
+| go build ./internal/session | PASS | exit 0 |
+| go vet ./internal/session | PASS | clean |
+| gofmt | PASS | clean |
+
+### Next
+green: fill the `New` and `Process` stubs with the least code that passes the 20 RED tests — event routing over `pairing.Manager` + `switcher.Switcher`, ordered-roster broadcast/relay, opaque offer/ice fan-out to peers, pairing/switcher sentinels surfaced as `ErrorMessage`, decode-never-panics.
+
+## S1-01 · attempt 1 · green-worker · 2026-07-10T00:32:21Z
+status: ok
+### Summary
+Filled the two panic-TODO bodies in `internal/session/session.go` with the bare-minimum event-driven hub. `New` constructs the Hub over the injected `pairing.Manager` + `switcher.Switcher` with an empty ordered roster. `Process` type-switches over `Inbound`/`SubmitPIN`/`Disconnect`: Inbound decodes via `signaling.Decode` (errors and unexpected server->client types → one addressed `ErrorMessage`, never panics); Join → `sw.AddClient` (dup surfaces the sentinel, state unchanged) + `pm.Register` + roster append; SwitchSource → `sw.SetOnAir` (sentinels surfaced) then broadcast `OnAirStateFrom(sw.OnAir())` per roster client in order; Offer/Answer/Ice relay the same message verbatim to every other peer. SubmitPIN delegates to `pm.SubmitPIN`, surfacing incorrect/rejected/unknown as `ErrorMessage`. Disconnect is a safe no-op off-roster, else captures was-on-air, `sw.RemoveClient` (clears on-air), drops from roster, and on prior on-air broadcasts `OnAirStateFrom(zero,false)` to remaining clients; pairing state retained. No new tests, no refactor, no suppression; only `internal/session/session.go` touched.
+### Result
+| Check | Status | Detail |
+|---|---|---|
+| `go test ./internal/session` | PASS | 20/20 tests green |
+| coverage | PASS | 97.9% of statements (≥80%) |
+| `gofmt -l internal/session` | PASS | clean |
+| `go vet ./internal/session` | PASS | clean |
+| `go build ./internal/session` | PASS | exit 0 |
+| diff scope | PASS | only internal/session/session.go modified vs sprint1 |
+| no panic-TODO | PASS | both stub bodies implemented; no SUB-AGENT-TODO remains |
+### Next
+structural review: confirm no orphan modules / parallel implementations / duplicate helpers across the session package before final gate.

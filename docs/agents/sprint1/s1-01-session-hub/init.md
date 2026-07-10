@@ -59,3 +59,27 @@ names to `.agentic/scaffold-symbols`. Implement NO real body.
 - M-007: exclude `New` (recurs across packages) from the uniqueness list — still stubbed. Prefer unique names
   (`Hub`, `Effect`, `Inbound`, `SubmitPIN`, `Disconnect`, `Process`). Set SCAFFOLD_SYMBOLS quoted or empty.
 - M-010: `git reset --hard sprint1` first.
+
+## S1-01 · attempt 1 · green-worker · 2026-07-10T00:28:04Z
+
+### Mandate
+Fill the two panic-TODO bodies (`New`, `Process`) in `internal/session/session.go` with the BARE
+MINIMUM to pass the 20 RED tests: join-admit (+dup/unpaired-visible), SubmitPIN outcomes,
+switch-source on-air + exact-roster broadcast, disconnect (on-air→clears+broadcasts-nobody,
+retained pairing, safe no-op), decode-never-panics + opaque offer/ice relay to peers. No new
+tests, no refactor, no suppression.
+
+### Scope (May / May Not)
+- **May:** edit `internal/session/session.go` only (implement New + Process + any small private helpers/roster in this file).
+- **May Not:** add/modify/weaken tests; touch other packages/go.mod; leave any panic-TODO.
+
+### Inputs
+- plan-ready (20 boxes): `docs/agents/sprint1/s1-01-session-hub/plan-ready.md`; tests: `internal/session/session_test.go`; standards.md
+- Reuse Sprint 0 surfaces directly (switcher.New(pm) — pm.IsPaired satisfies PairingOracle; signaling.Decode/OnAirStateFrom; pairing.SubmitPIN/Register/State/IsPaired; the Err* sentinels).
+
+### Acceptance
+- `go test ./internal/session` passes all 20; regressed=0; gofmt/vet clean; diff only session.go; coverage ≥80%.
+
+### Memory
+- M-010 (git reset --hard sprint1 first); M-011/M-005 (PACKAGE-SCOPED fenced .agentic/gate-matrix.md + STANDARDS_FILE);
+  STORY_DIR = MAIN tree path (append output.md there); git add scoped to internal/session.

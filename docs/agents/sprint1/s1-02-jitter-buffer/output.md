@@ -44,3 +44,27 @@ Created the canonical `internal/jitter/jitter.go` declaring every production sym
 | go vet ./internal/jitter | PASS | clean |
 ### Next
 green: fill the stubs with the least code that passes exactly this task's tests
+
+## S1-02 · attempt 1 · green-worker · 2026-07-10T00:24:32Z
+status: ok
+### Summary
+Filled the six panic-TODO bodies in the canonical `internal/jitter/jitter.go` with the least code that passes exactly the 12 RED tests — no new tests, no unforced refactor, no suppression. `Buffer` now carries `capacity`, a `cursor` (next-expected seq; 0 = nothing played), a `frames map[int]Frame` reorder store, and `underruns`/`overruns` counters. `New` clamps capacity ≤ 0 to `DefaultCapacity` and initializes the frame map. `Push` checks in the exact order the tests assert: `Seq < cursor` → `DroppedLate` (late frame never reordered, cursor never moves backward), already-buffered `Seq` → `DroppedDuplicate`, `len(frames) >= capacity` → increment `overruns` + `Overrun` (buffer left intact, nothing evicted), else buffer + `OK`. `Pop` emits the lowest buffered seq, deletes it, and advances `cursor = seq+1`; on empty it increments `underruns` and returns `(Frame{}, false)`. `Len`/`Underruns`/`Overruns` are direct reads. Stdlib only; touches only `internal/jitter/jitter.go`.
+### Result
+| Check | Status | Detail |
+|---|---|---|
+| `internal/jitter/jitter_test.go::TestNew_DefaultCapacity` | PASS | green |
+| `internal/jitter/jitter_test.go::TestNew_InjectableCapacity` | PASS | green |
+| `internal/jitter/jitter_test.go::TestPushPop_InOrder_EmitsInOrder` | PASS | green |
+| `internal/jitter/jitter_test.go::TestPop_AdvancesCursor` | PASS | green |
+| `internal/jitter/jitter_test.go::TestPush_OutOfOrder_EmitsInPlayoutOrder` | PASS | green |
+| `internal/jitter/jitter_test.go::TestPush_LateFrame_DroppedNotReordered` | PASS | green |
+| `internal/jitter/jitter_test.go::TestPush_DuplicateBuffered_Dropped` | PASS | green |
+| `internal/jitter/jitter_test.go::TestPush_DuplicateAlreadyPlayed_Dropped` | PASS | green |
+| `internal/jitter/jitter_test.go::TestPop_Empty_ReportsUnderrun` | PASS | green |
+| `internal/jitter/jitter_test.go::TestPush_AtCapacity_ReportsOverrun` | PASS | green |
+| `internal/jitter/jitter_test.go::TestPush_Overrun_LeavesBufferIntact` | PASS | green |
+| `internal/jitter/jitter_test.go::TestUnderrunOverrun_Distinguishable` | PASS | green |
+| `go test ./internal/jitter` | PASS | 12/12, coverage 96.4% |
+| gofmt / go vet / go build (internal/jitter) | PASS | clean |
+### Next
+structural review — orphan/parallel-implementation scan over internal/jitter, then final gate.
