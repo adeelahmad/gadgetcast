@@ -3,6 +3,8 @@
 // smoothed by an exponential moving average.
 package drift
 
+import "math"
+
 // Documented default control-law parameters (D8).
 const (
 	// DefaultKp is the proportional gain applied to the smoothed fill error.
@@ -24,6 +26,8 @@ type Controller struct {
 	Clamp    float64
 	Deadband float64
 	Tau      float64
+
+	emaFill float64
 }
 
 // Option configures a Controller at construction time.
@@ -41,10 +45,30 @@ func WithClamp(bound float64) Option { return func(c *Controller) { c.Clamp = bo
 // New constructs a Controller seeded with the documented defaults, then applies
 // any options.
 func New(opts ...Option) *Controller {
-	panic("SUB-AGENT-TODO: seed Controller with Default* params, apply opts, return it")
+	c := &Controller{
+		Kp:       DefaultKp,
+		Target:   DefaultTarget,
+		Clamp:    DefaultClamp,
+		Deadband: DefaultDeadband,
+		Tau:      DefaultTau,
+	}
+	for _, opt := range opts {
+		opt(c)
+	}
+	c.emaFill = c.Target
+	return c
 }
 
 // Update returns the resample ratio for the latest fill sample over interval dt.
 func (c *Controller) Update(fill, dt float64) float64 {
-	panic("SUB-AGENT-TODO: EMA-smooth fill (Tau/dt), apply deadband, proportional Kp*error, clamp to 1±Clamp")
+	alpha := dt / (c.Tau + dt)
+	c.emaFill += alpha * (fill - c.emaFill)
+
+	fillError := c.emaFill - c.Target
+	if math.Abs(fillError) < c.Deadband {
+		return 1.0
+	}
+
+	clamped := math.Max(-c.Clamp, math.Min(c.Clamp, c.Kp*fillError))
+	return 1.0 + clamped
 }
