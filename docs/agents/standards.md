@@ -1,8 +1,9 @@
 ---
 type: standards
-sprint: 0
+sprint: 1
 stack: go
 detected_at: "2026-07-10T00:00:00Z"
+reaffirmed_at: "2026-07-10T00:00:00Z"
 ---
 
 # Standards — gadgetcast
@@ -16,8 +17,9 @@ gate (`bin/gate-standards-cited`).
 
 - **Language:** Go 1.22.2 (`go version` → `go1.22.2 darwin/arm64`; `go` is on `$PATH`).
 - **Evidence:** `.gitignore` at repo root is the GitHub Go template (`*.exe`, `*.test`, `coverage.*`, `go.work` entries); `README.md` names Pion (a Go WebRTC library) as the primary WebRTC-endpoint candidate ("WebRTC endpoint (Pion / GStreamer webrtcbin / aiortc)").
-- **Repo state:** no `go.mod` yet — this is Sprint 0 / Phase 0 (feasibility spike), pre-first-commit-of-code. `docs/agents/memory.md` (M-001) already anticipates this: the scaffolder runs `go mod init <module>` before the first RED dispatch.
-- **Toolchain audit (what's actually on this machine — do not gate on absent tools):**
+- **Repo state (Sprint 0):** no `go.mod` yet — Sprint 0 / Phase 0 (feasibility spike), pre-first-commit-of-code. `docs/agents/memory.md` (M-001) already anticipates this: the scaffolder runs `go mod init <module>` before the first RED dispatch.
+- **Repo state (Sprint 1 reaffirmation, 2026-07-10):** `go.mod` now exists (`module github.com/adeelahmad/gadgetcast`, `go 1.22.2`), carries no `require` block, and no `go.sum` is present — stdlib-only holds for the code shipped so far. Source: `go.mod` (repo root) and `docs/agents/sprint0/plan.md` ("Ship a stdlib-only Go core (module `github.com/adeelahmad/gadgetcast`, go 1.22)"). Sprint 1 scope (`internal/session`, `internal/audio`) introduces no new package, so this constraint is unchanged.
+- **Toolchain audit (what's actually on this machine — do not gate on absent tools; unchanged since Sprint 0):**
 
   | Tool | On `$PATH`? | Use in gates below |
   |---|---|---|
@@ -48,12 +50,16 @@ Every bullet cites the local rule file that binds it plus, where the local file 
 - Run the RED test failing on the *assertion*, not a missing symbol — add the minimal type/func/zero-value shim needed to compile first. Source: `docs/agents/memory.md` M-002 (repo-specific seed lesson).
 - Implement only what the RED assertions require; do not widen the exported API beyond the task's tests. Source: `docs/agents/memory.md` M-003.
 - `-race` is recommended for any package touching goroutines/channels (the WebRTC/gadget pipeline is inherently concurrent: capture, resample, USB gadget write are separate stages). Source: `rules/golang/testing.md` ("Always run with the `-race` flag"). Advisory, not a hard gate, until Sprint 0 has real concurrent code (see Gate matrix note).
-- Minimum 80% coverage on pure-logic packages (protocol/signaling parsing, resampling math, config). Source: `rules/common/testing.md` ("Minimum Test Coverage: 80%"). Packages that are thin wrappers over cgo/hardware (`configfs`, V4L2 M2M, ALSA) are exempt from the numeric threshold — see Gate matrix.
+- **Sprint 1 reaffirmation:** `internal/session` is deliberately a single-threaded, event-driven hub (no goroutines/channels by design) and `internal/audio` is pure jitter-buffer/drift-control math — neither package introduces concurrency, so there is no concurrent code in Sprint 1 and `-race` stays ADVISORY, per the rule above. Source: `rules/golang/testing.md` ("Always run with the `-race` flag"). The promotion trigger is unchanged: the instant any package (this sprint's or a future one) spawns goroutines/channels, `-race` becomes a HARD gate — see Gate matrix Notes below.
+- Minimum 80% coverage on pure-logic packages (protocol/signaling parsing, resampling math, config). Source: `rules/common/testing.md` ("Minimum Test Coverage: 80%"). Packages that are thin wrappers over cgo/hardware (`configfs`, V4L2 M2M, ALSA) are exempt from the numeric threshold — see Gate matrix. `internal/session` and `internal/audio` are pure-logic packages, so the 80% threshold applies to both, unmodified.
 
 **Security**
 - No hardcoded secrets; read config (pairing PIN, Tailscale auth, etc.) from environment variables and fail fast at startup if a required one is missing. Source: `rules/golang/security.md` ("Secret Management") and `rules/common/security.md` ("Secret Management").
 - Use `context.Context` for timeout control on every network/IO call (WebRTC session setup, WS signaling, USB gadget writes). Source: `rules/golang/security.md` ("Context & Timeouts").
 - This device is a network-controlled camera/mic injector for the host per the project's own threat model (`README.md` §4 "Security"); validate all input at the WS/HTTP signaling boundary, never trust an unauthenticated LAN client. Source: `rules/common/security.md` ("Mandatory Security Checks") and `CLAUDE.md` Coding Rules ("Only validate at system boundaries").
+
+**Dependencies**
+- No third-party dependency may be introduced for `internal/session` or `internal/audio`; stdlib-only remains the rule for this sprint's scope, matching the module's current no-`require`, no-`go.sum` state. Source: `docs/agents/sprint0/plan.md` ("Ship a stdlib-only Go core").
 
 **File & project organization**
 - Many small files over few large ones: 200-400 lines typical, 800 max; organize by feature/domain (e.g. `gadget/`, `webrtc/`, `signaling/`), not by type. Source: `rules/common/coding-style.md` ("File Organization").
@@ -88,6 +94,6 @@ go tool cover -func=coverage.out
 ```
 
 Notes:
-- Before any gate runs on this repo for the first time: `go mod init <module>` must have been run (no `go.mod` exists yet). Source: `docs/agents/memory.md` M-001.
-- Race detection (`go test -race ./...`, per `rules/golang/testing.md`) is advisory for Sprint 0 and becomes a HARD gate the moment a package spawns goroutines/channels across the capture → resample → gadget-write pipeline described in `README.md` §3 (Architecture).
+- Before any gate runs on this repo for the first time: `go mod init <module>` must have been run (no `go.mod` exists yet). Source: `docs/agents/memory.md` M-001. (Superseded by fact, not by rule: `go.mod` now exists as of Sprint 1 — see "Repo state (Sprint 1 reaffirmation)" above.)
+- Race detection (`go test -race ./...`, per `rules/golang/testing.md`) is advisory for Sprint 0 and becomes a HARD gate the moment a package spawns goroutines/channels across the capture → resample → gadget-write pipeline described in `README.md` §3 (Architecture). Sprint 1 reaffirmation: `internal/session` (single-threaded, event-driven hub) and `internal/audio` (jitter-buffer/drift-control math) introduce no goroutines or channels, so this stays advisory for both — the trigger condition itself is unchanged.
 - If `golangci-lint`, `staticcheck`, `gosec`, or `govulncheck` are installed later, promote their rows from OPTIONAL to HARD in a follow-up standards revision — do not silently start enforcing an undeclared tool.
