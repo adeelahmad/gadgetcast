@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>GadgetCast Studio</title>
+    <link rel="icon" type="image/svg+xml" href="/src/ds/assets/logo-glyph.svg" />
+    <script>
+      /* Apply the remembered theme before first paint (per-viewer convenience; light is the default). */
+      try { var t = localStorage.getItem("gadgetcast:theme"); if (t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t); } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

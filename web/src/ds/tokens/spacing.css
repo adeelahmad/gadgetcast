@@ -1,0 +1,19 @@
+/* 4px base grid. The studio is dense: default gaps are 6–10px, not 16–24px. */
+:root{
+  --sp-0:0; /* @kind spacing */--sp-1:2px;--sp-2:4px;--sp-3:6px;--sp-4:8px;--sp-5:10px;--sp-6:12px;
+  --sp-7:16px;--sp-8:20px;--sp-9:24px;--sp-10:32px;--sp-11:40px;--sp-12:56px;--sp-13:80px;
+
+  /* Control heights — one ladder for every interactive element */
+  --ctl-xs:20px;--ctl-sm:24px;--ctl-md:28px;--ctl-lg:34px;--ctl-xl:40px;
+
+  /* Studio chrome geometry */
+  --h-header:48px;
+  --h-subbar:32px;
+  --h-statusbar:24px;
+  --w-rail:44px;          /* icon rail */
+  --w-sidebar:236px;      /* node palette / pipeline library */
+  --w-inspector:288px;    /* node config panel */
+  --w-node:224px;         /* default pipeline node width */
+  --port-size:10px; /* @kind spacing */       /* patch-port hit dot */
+  --grid-canvas:16px; /* @kind spacing */     /* dot-grid pitch on the patch canvas */
+}
