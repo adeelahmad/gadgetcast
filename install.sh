@@ -195,15 +195,19 @@ init_config() {
 		printf '%06d\n' "$((pin % 1000000))" >"$CONF_DIR/pin"
 		chmod 600 "$CONF_DIR/pin"
 	fi
-	if [ ! -s "$CONF_DIR/tls.key" ] || [ ! -s "$CONF_DIR/tls.crt" ]; then
+	# Reissue the cert when the hostname changes, e.g. one set in Raspberry Pi
+	# Imager's customisation screen and applied by cloud-init on first boot.
+	host="$(hostname)"
+	if [ ! -s "$CONF_DIR/tls.key" ] || [ ! -s "$CONF_DIR/tls.crt" ] ||
+		[ "$(cat "$CONF_DIR/tls.host" 2>/dev/null)" != "$host" ]; then
 		have openssl || die "openssl is required to create the TLS certificate"
-		host="$(hostname)"
 		openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes -days 3650 \
 			-subj "/CN=$host.local" \
 			-addext "subjectAltName=DNS:$host.local,DNS:$host,DNS:localhost,IP:127.0.0.1" \
 			-keyout "$CONF_DIR/tls.key" -out "$CONF_DIR/tls.crt" >/dev/null 2>&1 ||
 			die "could not create TLS certificate"
 		chmod 600 "$CONF_DIR/tls.key"
+		echo "$host" >"$CONF_DIR/tls.host"
 	fi
 	if [ ! -s "$CONF_DIR/config.json" ]; then
 		cat >"$CONF_DIR/config.json" <<EOF
@@ -216,9 +220,11 @@ EOF
 	fi
 	# Put the PIN where a headless user can read it: the SD card's boot partition.
 	bd="$(boot_dir)"
-	if [ -n "$bd" ] && [ ! -f "$bd/gadgetcast-pin.txt" ]; then
-		printf 'gadgetcast pairing PIN: %s\nOpen https://%s.local in a browser.\n' \
-			"$(cat "$CONF_DIR/pin")" "$(hostname)" >"$bd/gadgetcast-pin.txt" 2>/dev/null || true
+	if [ -n "$bd" ]; then
+		note="$(printf 'gadgetcast pairing PIN: %s\nOpen https://%s.local in a browser.' \
+			"$(cat "$CONF_DIR/pin")" "$host")"
+		[ "$(cat "$bd/gadgetcast-pin.txt" 2>/dev/null)" = "$note" ] ||
+			echo "$note" >"$bd/gadgetcast-pin.txt" 2>/dev/null || true
 	fi
 }
 
@@ -250,7 +256,8 @@ write_units() {
 [Unit]
 Description=gadgetcast WebRTC to USB webcam/audio bridge
 Wants=network-online.target
-After=network-online.target
+# cloud-init applies Raspberry Pi Imager's hostname, user and Wi-Fi settings.
+After=network-online.target cloud-init.target
 
 [Service]
 EnvironmentFile=-$ENV_FILE
@@ -272,7 +279,8 @@ EOF
 [Unit]
 Description=Update gadgetcast to the latest release
 Wants=network-online.target
-After=network-online.target
+# cloud-init applies Raspberry Pi Imager's hostname, user and Wi-Fi settings.
+After=network-online.target cloud-init.target
 
 [Service]
 Type=oneshot

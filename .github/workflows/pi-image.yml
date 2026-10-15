@@ -4,6 +4,11 @@ name: Pi image
 # preinstalled, USB gadget mode enabled, hostname gadgetcast.local and
 # automatic updates on, then attaches it to the release. Called by the release
 # workflow; can also be run by hand for an existing release.
+#
+# The image keeps Raspberry Pi OS's cloud-init first boot, so Raspberry Pi
+# Imager's OS customisation (hostname, user, Wi-Fi, SSH, locale) applies to it.
+# gadgetcast-os-list.json is an Imager repository entry for the image that
+# declares this (init_format cloudinit-rpi), so Imager offers customisation.
 
 on:
   workflow_call:
@@ -51,6 +56,7 @@ jobs:
           keyboard-layout: English (US)
           timezone: Etc/UTC
           compression: xz
+          enable-cloud-init: 1
           increase-runner-disk-size: true
 
       - name: Attach image to release
@@ -58,6 +64,31 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
           IMAGE: ${{ steps.build.outputs.image-path }}
+          REPO: ${{ github.repository }}
         run: |
           sha256sum "$IMAGE" | sed 's#  .*/#  #' >"$IMAGE.sha256"
-          gh release upload "$VERSION" "$IMAGE" "$IMAGE.sha256" --clobber
+          name="$(basename "$IMAGE")"
+          extract_size="$(xz -dc "$IMAGE" | wc -c)"
+          extract_sha256="$(xz -dc "$IMAGE" | sha256sum | cut -d' ' -f1)"
+          jq -n \
+            --arg name "gadgetcast $VERSION" \
+            --arg url "https://github.com/$REPO/releases/download/$VERSION/$name" \
+            --arg date "$(date -u +%F)" \
+            --argjson extract_size "$extract_size" \
+            --arg extract_sha256 "$extract_sha256" \
+            --argjson size "$(stat -c %s "$IMAGE")" \
+            --arg sha256 "$(cut -d' ' -f1 "$IMAGE.sha256")" \
+            '{os_list: [{
+              name: $name,
+              description: "Raspberry Pi OS Lite (64-bit) with gadgetcast: a USB webcam and audio device fed from browsers over WebRTC",
+              url: $url,
+              release_date: $date,
+              extract_size: $extract_size,
+              extract_sha256: $extract_sha256,
+              image_download_size: $size,
+              image_download_sha256: $sha256,
+              init_format: "cloudinit-rpi",
+              devices: ["pi5-64bit", "pi4-64bit", "pi3-64bit"]
+            }]}' >gadgetcast-os-list.json
+          cat gadgetcast-os-list.json
+          gh release upload "$VERSION" "$IMAGE" "$IMAGE.sha256" gadgetcast-os-list.json --clobber
