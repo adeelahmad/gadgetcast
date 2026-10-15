@@ -7,6 +7,24 @@
 
 ---
 
+## Install
+
+**Easiest — flash a card.** Download `gadgetcast-*.img.xz` from the [latest release](https://github.com/adeelahmad/gadgetcast/releases/latest), open it in [Raspberry Pi Imager](https://www.raspberrypi.com/software/) ("Use custom"), set your Wi-Fi in the customisation screen, flash, boot. Then open **https://gadgetcast.local**.
+
+**Existing Raspberry Pi OS (or any Linux box)** — one command, no prompts:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/adeelahmad/gadgetcast/master/install.sh | sh
+```
+
+It installs the latest release, enables USB gadget mode on a Pi (reboot once, or add `-s -- --reboot` to do it automatically), starts the service and turns on daily automatic updates.
+
+**Updates** happen on their own. To update right now, rerun the command above. Options: `GADGETCAST_NO_AUTOUPDATE=1` (no update timer), `GADGETCAST_VERSION=v0.1.0` (pin a release), `--uninstall`.
+
+**Cutting a release** (maintainers): Actions → *Release* → *Run workflow* → type `v0.1.0`, or push a `v*` tag. Binaries, checksums, the installer and the Pi image are all published to the release automatically.
+
+---
+
 ## 1. Concept
 
 A Raspberry Pi that plugs into any computer over USB and presents itself as a **standard USB webcam and USB audio device** (microphone + speaker). The *source* of that video and audio is not a local sensor — it is a **WebRTC session** served by the Pi itself to any browser on the network.
@@ -159,7 +177,7 @@ Multiple browser clients can be connected simultaneously; exactly one stream is 
 
 **Phase 3 — Duplex + multi-client.** UAC2 host-speaker capture looped back into WebRTC (echo cancellation via browser AEC); multi-client switcher UI; on-air states.
 
-**Phase 4 — Product polish.** mDNS discovery, pairing flow, Tailscale integration, prebuilt image (pi-gen), optional USB-NIC mode, CM4 carrier design.
+**Phase 4 — Product polish.** mDNS discovery, pairing flow, Tailscale integration, prebuilt image (pi-gen, automated by the release workflow), optional USB-NIC mode, CM4 carrier design.
 
 ---
 
