@@ -1,0 +1,21 @@
+/* Minimal global base. Components carry their own styling via tokens. */
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--surface-app);color:var(--text-body);font:var(--type-body);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+h1,h2,h3,h4{margin:0;font-family:var(--font-display);color:var(--text-primary);letter-spacing:var(--ls-title)}
+h1{font:var(--type-display);letter-spacing:var(--ls-display)}
+h2{font:var(--type-title)}
+h3,h4{font:var(--type-heading)}
+p{margin:0;text-wrap:pretty}
+a{color:var(--text-link);text-decoration:none;border-bottom:1px solid currentColor;transition:var(--t-hover)}
+a:hover{color:var(--text-link-hover);border-bottom-color:currentColor}
+code,kbd,pre,samp{font-family:var(--font-mono);font-size:var(--fs-meta)}
+kbd{background:var(--surface-input);border:1px solid var(--line-strong);border-radius:var(--r-xs);padding:1px 4px;color:var(--text-muted);font-size:var(--fs-tick)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:none;box-shadow:var(--ring-focus)}
+::selection{background:var(--surface-selected);color:var(--text-primary)}
+.gc-caps{font:var(--type-caps);letter-spacing:var(--ls-caps);text-transform:uppercase;color:var(--text-faint)}
+.gc-scroll{scrollbar-width:thin;scrollbar-color:var(--line-strong) transparent}
+.gc-scroll::-webkit-scrollbar{width:8px;height:8px}
+.gc-scroll::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:var(--r-pill);border:2px solid transparent;background-clip:content-box}
+.gc-dotgrid{background-image:radial-gradient(var(--grid-dot) 1px,transparent 1px);background-size:var(--grid-canvas) var(--grid-canvas)}

@@ -1,0 +1,20 @@
+/* FLAT UI. There is no drop-shadow scale: depth is expressed by a surface step
+   plus a 1px line. The --el-* names survive so components keep one vocabulary,
+   but they resolve to rings, not shadows. Glow tokens are rings too — they still
+   mean "energised", never "elevated". */
+:root{
+  --el-0:none; /* @kind shadow */
+  --el-1:none; /* @kind shadow */
+  --el-2:none; /* @kind shadow */
+  --el-3:0 0 0 1px var(--line-border); /* @kind shadow */
+  --el-4:0 0 0 1px var(--line-strong); /* @kind shadow */
+  --el-inset:none; /* @kind shadow */
+
+  --glow-video:0 0 0 2px var(--sig-video); /* @kind shadow */
+  --glow-audio:0 0 0 2px var(--sig-audio); /* @kind shadow */
+  --glow-ai:0 0 0 2px var(--sig-ai); /* @kind shadow */
+  --glow-live:0 0 0 2px var(--sig-live); /* @kind shadow */
+  --ring-focus:0 0 0 2px var(--surface-app), 0 0 0 4px var(--brand); /* @kind shadow */
+
+  --blur-panel:none; /* @kind other */
+}

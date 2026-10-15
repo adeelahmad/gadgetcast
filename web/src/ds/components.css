@@ -1,0 +1,72 @@
+/* Interaction states for the component library (hover/press/focus can't be inline).
+   Everything else about a component lives in its JSX as token-referencing inline styles. */
+
+/* Buttons */
+.gc-btn{display:inline-flex;align-items:center;gap:var(--sp-3);justify-content:center;border-radius:var(--r-sm);border:1px solid transparent;font-family:var(--font-sans);font-weight:var(--fw-medium);cursor:pointer;white-space:nowrap;transition:var(--t-hover),box-shadow var(--dur-fast) var(--ease-out),transform var(--dur-instant) var(--ease-out);user-select:none}
+.gc-btn:active:not(:disabled){transform:translateY(.5px)}
+.gc-btn:disabled{opacity:.42;cursor:not-allowed}
+.gc-btn--primary{background:var(--brand);color:var(--text-on-brand)}
+.gc-btn--primary:hover:not(:disabled){background:color-mix(in srgb,var(--brand) 86%,var(--ink-000))}
+.gc-btn--primary:active:not(:disabled){background:var(--brand-press)}
+.gc-btn--secondary{background:var(--surface-raised);color:var(--text-primary);border-color:var(--line-strong)}
+.gc-btn--secondary:hover:not(:disabled){background:var(--surface-hover);border-color:var(--text-faint)}
+.gc-btn--secondary:active:not(:disabled){background:var(--surface-press)}
+.gc-btn--ghost{background:transparent;color:var(--text-muted)}
+.gc-btn--ghost:hover:not(:disabled){background:var(--surface-hover);color:var(--text-primary)}
+.gc-btn--ghost:active:not(:disabled){background:var(--surface-press)}
+.gc-btn--danger{background:var(--sig-live);color:var(--ink-000)}
+.gc-btn--danger:hover:not(:disabled){background:color-mix(in srgb,var(--sig-live) 86%,var(--ink-000))}
+.gc-btn--danger:active:not(:disabled){background:color-mix(in srgb,var(--sig-live) 82%,var(--ink-1000))}
+.gc-btn--live{background:var(--sig-live-glow);color:var(--sig-live);border-color:var(--sig-live-dim)}
+.gc-btn--live:hover:not(:disabled){background:var(--sig-live-dim);border-color:var(--sig-live)}
+
+/* Icon-only buttons */
+.gc-iconbtn{display:inline-flex;align-items:center;justify-content:center;border:1px solid transparent;background:transparent;color:var(--text-muted);border-radius:var(--r-sm);cursor:pointer;transition:var(--t-hover)}
+.gc-iconbtn:hover:not(:disabled){background:var(--surface-hover);color:var(--text-primary)}
+.gc-iconbtn:active:not(:disabled){background:var(--surface-press)}
+.gc-iconbtn[data-active="true"]{background:var(--surface-selected);color:var(--brand)}
+.gc-iconbtn:disabled{opacity:.4;cursor:not-allowed}
+.gc-iconbtn--outlined{border-color:var(--line-strong);background:var(--surface-raised)}
+
+/* Fields */
+.gc-field{background:var(--surface-input);border:1px solid var(--line-strong);border-radius:var(--r-sm);color:var(--text-primary);transition:var(--t-hover),box-shadow var(--dur-fast) var(--ease-out);width:100%}
+.gc-field::placeholder{color:var(--text-disabled)}
+.gc-field:hover:not(:disabled){border-color:var(--text-faint)}
+.gc-field:focus{border-color:var(--line-focus);box-shadow:var(--ring-focus)}
+.gc-field:disabled{opacity:.5;cursor:not-allowed}
+.gc-field[data-invalid="true"]{border-color:var(--st-err)}
+
+/* Rows & list items */
+.gc-row{transition:var(--t-hover)}
+.gc-row:hover{background:var(--surface-hover)}
+.gc-row[data-selected="true"]{background:var(--surface-selected)}
+
+/* Tabs */
+.gc-tab{position:relative;background:transparent;border:0;cursor:pointer;color:var(--text-muted);transition:var(--t-hover)}
+.gc-tab:hover{color:var(--text-primary)}
+.gc-tab[data-selected="true"]{color:var(--text-primary)}
+.gc-tab[data-selected="true"]::after{content:"";position:absolute;left:var(--sp-3);right:var(--sp-3);bottom:-1px;height:2px;background:var(--brand);border-radius:var(--r-pill)}
+
+/* Menus */
+.gc-menuitem:hover:not(:disabled){background:var(--surface-hover)}
+.gc-menuitem:active:not(:disabled){background:var(--surface-press)}
+.gc-menuitem[data-selected="true"]{background:var(--surface-selected)}
+.gc-menuitem[data-danger="true"]:hover:not(:disabled){background:var(--sig-live-glow)}
+.gc-menuitem:disabled{opacity:.42;cursor:not-allowed}
+.gc-menuitem:focus-visible{box-shadow:var(--ring-focus);outline:none}
+
+/* Toasts */
+.gc-toast{animation:gc-toast-in var(--dur-fast) var(--ease-out)}
+.gc-toast-action{transition:var(--t-hover)}
+.gc-toast-action:hover{background:var(--surface-hover)}
+@keyframes gc-toast-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* Pipeline nodes & ports */
+.gc-node{transition:box-shadow var(--dur-fast) var(--ease-out),border-color var(--dur-fast) var(--ease-out),transform var(--dur-instant) var(--ease-out)}
+.gc-node:hover{border-color:var(--text-faint)}
+.gc-port{transition:transform var(--dur-fast) var(--ease-snap),box-shadow var(--dur-fast) var(--ease-out)}
+.gc-port:hover{transform:scale(1.35)}
+.gc-port[data-snapped="true"]{animation:gc-port-snap var(--dur-fast) var(--ease-snap) forwards}
+.gc-wire-flow{stroke-dasharray:5 7;animation:gc-flow 900ms linear infinite}
+.gc-onair{animation:gc-onair 1.6s var(--ease-in-out) infinite}
+.gc-pulse{animation:gc-pulse 1.4s var(--ease-in-out) infinite}

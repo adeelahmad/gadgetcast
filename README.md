@@ -179,6 +179,20 @@ Multiple browser clients can be connected simultaneously; exactly one stream is 
 
 **Phase 4 — Product polish.** mDNS discovery, pairing flow, Tailscale integration, prebuilt image (pi-gen, automated by the release workflow), optional USB-NIC mode, CM4 carrier design.
 
+### 7.1 Running the server
+
+The Pi-side server (`cmd/gadgetcast`) serves the REST API, the `/api/events` push socket and the `/ws` signaling socket described in [`docs/api.md`](docs/api.md), plus the Studio UI embedded from `web/dist`.
+
+```sh
+# Production: HTTPS is mandatory; cert/key, bind and PIN source come from the JSON config.
+go run ./cmd/gadgetcast -config /etc/gadgetcast/config.json -data /var/lib/gadgetcast
+
+# UI development: plain HTTP on 127.0.0.1:8080, config optional, a random PIN is logged.
+go run ./cmd/gadgetcast -dev -data ./data
+```
+
+Flags: `-config` (JSON, see `internal/config`), `-addr` (listen address override; default `:8443`, or `<tailscale target>:8443` for `bind.mode=tailscale-only`), `-data` (pipelines are stored as `<data>/pipelines/<id>.json`; a default "Browser mic → USB mic" pipeline is seeded when empty), `-dev`, `-version`. `pin.source` may be `env:NAME`, `file:PATH` or a literal. Without a UI build the server answers non-API paths with a short plain-text notice. SIGINT/SIGTERM shut it down gracefully.
+
 ---
 
 ## 8. Open questions
