@@ -36,9 +36,9 @@ Open `https://gadgetcast.local` on your phone or laptop, share your camera, mic 
 
 ## Install
 
-**Flash a card (easiest).** Download `gadgetcast-*.img.xz` from the [latest release](https://github.com/adeelahmad/gadgetcast/releases/latest), open it in [Raspberry Pi Imager](https://www.raspberrypi.com/software/) with "Use custom", set Wi-Fi in the customisation screen, flash and boot.
+**Flash a card (easiest).** Download `gadgetcast-*.img.xz` from the [latest release](https://github.com/adeelahmad/gadgetcast/releases/latest), open it in [Raspberry Pi Imager](https://www.raspberrypi.com/software/) with "Use custom", set Wi-Fi in the customisation screen, flash and boot. The pairing PIN is in `gadgetcast-pin.txt` on the card's boot partition.
 
-**Existing Raspberry Pi OS (or any Linux box).** Run the one-liner above. It installs the latest release, enables USB gadget mode on a Pi (reboot once, or append `-s -- --reboot`), starts the service and turns on daily automatic updates. Options: `GADGETCAST_NO_AUTOUPDATE=1`, `GADGETCAST_VERSION=v0.1.0`, `--uninstall`.
+**Existing Raspberry Pi OS (or any Linux box).** Run the one-liner above. It installs the latest release, creates a TLS certificate and pairing PIN (printed at the end), enables USB gadget mode on a Pi (reboot once, or append `-s -- --reboot`), starts the service and turns on daily automatic updates. Options: `GADGETCAST_NO_AUTOUPDATE=1`, `GADGETCAST_VERSION=v0.1.0`, `--uninstall`.
 
 **From source.**
 
@@ -47,6 +47,10 @@ git clone https://github.com/adeelahmad/gadgetcast && cd gadgetcast
 go test ./...
 go run ./cmd/gadgetcast -dev -data ./data   # plain HTTP on 127.0.0.1:8080, PIN printed to the log
 ```
+
+In production HTTPS is mandatory and the certificate, bind address and PIN source come from the JSON config: `gadgetcast -config /etc/gadgetcast/config.json -data /var/lib/gadgetcast`. Flags: `-config`, `-addr` (default `:8443`), `-data` (pipelines are stored as `<data>/pipelines/<id>.json`), `-dev`, `-version`. The REST, `/api/events` and `/ws` signaling API is documented in [docs/api.md](docs/api.md).
+
+**Cutting a release** (maintainers): Actions → *Release* → *Run workflow* → type `v0.1.0`, or push a `v*` tag. Binaries, checksums, the installer and the Pi image are published to the release automatically.
 
 ## Quick start
 

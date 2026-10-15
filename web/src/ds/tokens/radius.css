@@ -1,0 +1,11 @@
+/* Radii are tight — machined panels, not soft cards. */
+:root{
+  --r-0:0; /* @kind radius */
+  --r-xs:3px;    /* ticks, tags, meter caps */
+  --r-sm:5px;    /* inputs, buttons, badges */
+  --r-md:7px;    /* nodes, cards, list rows */
+  --r-lg:10px;   /* panels, popovers, modals */
+  --r-xl:14px;   /* hero surfaces, device illustration frames */
+  --r-pill:999px;
+  --bw-hair:1px; /* @kind spacing */--bw-strong:1.5px; /* @kind spacing */--bw-wire:2px; /* @kind spacing */
+}

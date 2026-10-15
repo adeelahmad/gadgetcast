@@ -159,7 +159,7 @@ Multiple browser clients can be connected simultaneously; exactly one stream is 
 
 **Phase 3 — Duplex + multi-client.** UAC2 host-speaker capture looped back into WebRTC (echo cancellation via browser AEC); multi-client switcher UI; on-air states.
 
-**Phase 4 — Product polish.** mDNS discovery, pairing flow, Tailscale integration, prebuilt image (pi-gen), optional USB-NIC mode, CM4 carrier design.
+**Phase 4 — Product polish.** mDNS discovery, pairing flow, Tailscale integration, prebuilt image (pi-gen, automated by the release workflow), optional USB-NIC mode, CM4 carrier design.
 
 ---
 
