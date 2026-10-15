@@ -1,0 +1,22 @@
+/* Thin React Flow overrides, as in the design system's ui_kits/studio/index.html. React Flow keeps
+   ownership of viewport and interaction; these only stop its defaults from painting over the system. */
+html,body{height:100%;overflow:hidden}
+#root{position:absolute;inset:0}
+.react-flow__node{cursor:grab}
+.react-flow__node.dragging{cursor:grabbing}
+.react-flow__pane{cursor:default}
+.react-flow__handle{cursor:crosshair}
+.react-flow__edgeupdater{cursor:crosshair}
+.react-flow__minimap{background:var(--surface-panel)}
+.react-flow__minimap svg{display:block}
+.react-flow__selection,.react-flow__nodesselection-rect{background:var(--surface-selected);border:1px solid var(--brand);border-radius:2px}
+.react-flow__edge.selected .gc-wire,.react-flow__edge:focus{outline:none}
+.react-flow__node-gc{padding:0;border:0;background:transparent;box-shadow:none;border-radius:0}
+.react-flow__node-gc.selected,.react-flow__node-gc:focus,.react-flow__node-gc:focus-visible{box-shadow:none;outline:none}
+.react-flow__edge-path{stroke:none}
+
+/* Scrolling flex columns: children keep their natural height and the column scrolls. */
+.gc-stack>*{flex-shrink:0}
+
+/* Boot splash */
+.gc-boot{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--sp-6);background:var(--surface-app)}

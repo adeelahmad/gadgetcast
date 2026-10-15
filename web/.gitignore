@@ -1,0 +1,5 @@
+node_modules/
+# Build output: embedded by the Go server; only the placeholder is tracked.
+dist/*
+!dist/.gitkeep
+*.tsbuildinfo

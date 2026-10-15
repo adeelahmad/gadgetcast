@@ -1,0 +1,96 @@
+/* ── GadgetCast color system ───────────────────────────────────────────────
+   Light is the default theme (a bright instrument panel); dark is the
+   supported studio theme via [data-theme="dark"]. The UI is FLAT: colour and
+   1px lines carry all hierarchy — no shadows, no gradients, no glows.
+   Base ramps first, semantic aliases second. Always author against semantics. */
+:root{
+  /* Neutral ink ramp — cool blue-grey, never pure black, never pure grey */
+  --ink-1000:#06080b;--ink-950:#0a0d12;--ink-900:#0e1218;--ink-850:#12171f;
+  --ink-800:#171d26;--ink-700:#1e2631;--ink-600:#28323f;--ink-500:#37444f;
+  --ink-400:#4d5c6b;--ink-300:#6d7d8d;--ink-200:#93a2b1;--ink-150:#b3c0cc;
+  --ink-100:#ccd6df;--ink-050:#e6ecf1;--ink-025:#f2f5f8;--ink-000:#f7f9fb;
+
+  /* Signal palette — one hue per class of media, used on wires, ports, meters.
+     Light-theme values: darkened enough to hold 4.5:1 on white. */
+  --sig-video:#0aa2cc;--sig-video-dim:#8fd9ec;--sig-video-glow:#0aa2cc1f;
+  --sig-audio:#c1810b;--sig-audio-dim:#f0d49a;--sig-audio-glow:#c1810b1f;
+  --sig-ai:#7c4fe0;--sig-ai-dim:#cdbcf5;--sig-ai-glow:#7c4fe01f;
+  --sig-data:#2f5fd8;--sig-data-dim:#b3c5f2;--sig-data-glow:#2f5fd81f;
+  --sig-live:#e02430;--sig-live-dim:#f5b3b7;--sig-live-glow:#e0243026;
+  --sig-bt:#2b6ede;--sig-bt-dim:#b0c8f4;--sig-bt-glow:#2b6ede1f;
+
+  /* Status */
+  --st-ok:#12855f;--st-ok-dim:#a6e0cb;
+  --st-warn:#b47407;--st-warn-dim:#f0d29c;
+  --st-err:#d13341;--st-err-dim:#f4b6bb;
+  --st-idle:#93a2b1;
+
+  /* Brand */
+  --brand:#0e9cc4;--brand-press:#0b7d9e;--brand-ink:#ffffff;--brand-deep:#e2f4fa;
+
+  /* ── Semantic: surfaces ── */
+  --surface-canvas:#eef2f6;      /* patch-bay canvas, app backdrop */
+  --surface-app:#f7f9fb;         /* chrome behind panels */
+  --surface-panel:#ffffff;       /* sidebars, inspectors */
+  --surface-card:#ffffff;        /* nodes, cards, list rows */
+  --surface-raised:#ffffff;      /* menus, popovers, node headers */
+  --surface-input:#f2f5f8;       /* field wells */
+  --surface-hover:#0e121808;
+  --surface-press:#0e121814;
+  --surface-selected:#0aa2cc1a;
+  --scrim:#1e263166;
+
+  /* ── Semantic: text ── */
+  --text-primary:var(--ink-900);
+  --text-body:var(--ink-800);
+  --text-muted:var(--ink-400);
+  --text-faint:var(--ink-300);
+  --text-disabled:var(--ink-200);
+  --text-on-brand:var(--brand-ink);
+  --text-link:#0b7d9e;
+  --text-link-hover:#075f79;
+
+  /* ── Semantic: lines — the whole hierarchy, since the UI is flat ── */
+  --line-hairline:#0e121814;   /* 1px separators inside panels */
+  --line-border:#0e121824;     /* card + node outlines */
+  --line-strong:#0e12183d;     /* inputs, toolbars */
+  --line-focus:var(--brand);
+  --grid-dot:#0e12181f;        /* canvas dot grid */
+}
+
+/* Studio theme — same ramps, remapped semantics. Still flat: surfaces step by
+   one ink value at a time and lines do the separating. */
+[data-theme="dark"]{
+  --sig-video:#22c8f5;--sig-video-dim:#12708b;--sig-video-glow:#22c8f52e;
+  --sig-audio:#ffc247;--sig-audio-dim:#8a6415;--sig-audio-glow:#ffc2472e;
+  --sig-ai:#a97bff;--sig-ai-dim:#5b3f96;--sig-ai-glow:#a97bff2e;
+  --sig-data:#5b8cff;--sig-data-dim:#31488c;--sig-data-glow:#5b8cff2e;
+  --sig-live:#ff3b47;--sig-live-dim:#8d2129;--sig-live-glow:#ff3b4733;
+  --sig-bt:#4c8dff;--sig-bt-dim:#2a4c8c;--sig-bt-glow:#4c8dff2e;
+  --st-ok:#34d399;--st-ok-dim:#1a6b52;
+  --st-warn:#f59e0b;--st-warn-dim:#87570a;
+  --st-err:#f4525f;--st-err-dim:#872b33;
+  --st-idle:#6d7d8d;
+  --brand:#22c8f5;--brand-press:#17a9d1;--brand-ink:#04212b;--brand-deep:#071b24;
+  --surface-canvas:var(--ink-1000);
+  --surface-app:var(--ink-950);
+  --surface-panel:var(--ink-900);
+  --surface-card:var(--ink-850);
+  --surface-raised:var(--ink-800);
+  --surface-input:var(--ink-1000);
+  --surface-hover:#ffffff0a;
+  --surface-press:#ffffff14;
+  --surface-selected:#22c8f51f;
+  --scrim:#040609b3;
+  --text-primary:var(--ink-050);
+  --text-body:var(--ink-100);
+  --text-muted:var(--ink-200);
+  --text-faint:var(--ink-300);
+  --text-disabled:var(--ink-400);
+  --text-link:var(--brand);
+  --text-link-hover:#7ee0ff;
+  --line-hairline:#ffffff12;
+  --line-border:#ffffff21;
+  --line-strong:#ffffff33;
+  --grid-dot:#ffffff14;
+}
