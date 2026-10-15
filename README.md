@@ -9,7 +9,7 @@
 
 ## Install
 
-**Easiest — flash a card.** Download `gadgetcast-*.img.xz` from the [latest release](https://github.com/adeelahmad/gadgetcast/releases/latest), open it in [Raspberry Pi Imager](https://www.raspberrypi.com/software/) ("Use custom"), set your Wi-Fi in the customisation screen, flash, boot. Then open **https://gadgetcast.local**.
+**Easiest — flash a card.** Download `gadgetcast-*.img.xz` from the [latest release](https://github.com/adeelahmad/gadgetcast/releases/latest), open it in [Raspberry Pi Imager](https://www.raspberrypi.com/software/) ("Use custom"), set your Wi-Fi in the customisation screen, flash, boot. Then open **https://gadgetcast.local**. The pairing PIN is in `gadgetcast-pin.txt` on the card's boot partition.
 
 **Existing Raspberry Pi OS (or any Linux box)** — one command, no prompts:
 
@@ -17,7 +17,7 @@
 curl -fsSL https://raw.githubusercontent.com/adeelahmad/gadgetcast/master/install.sh | sh
 ```
 
-It installs the latest release, enables USB gadget mode on a Pi (reboot once, or add `-s -- --reboot` to do it automatically), starts the service and turns on daily automatic updates.
+It installs the latest release, creates a TLS certificate and pairing PIN (printed at the end), enables USB gadget mode on a Pi (reboot once, or add `-s -- --reboot` to do it automatically), starts the service and turns on daily automatic updates.
 
 **Updates** happen on their own. To update right now, rerun the command above. Options: `GADGETCAST_NO_AUTOUPDATE=1` (no update timer), `GADGETCAST_VERSION=v0.1.0` (pin a release), `--uninstall`.
 

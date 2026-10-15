@@ -11,6 +11,7 @@
 #   --update                 only update the binary if a newer release exists (used by the timer)
 #   --uninstall              remove gadgetcast, its service and the update timer
 #   --reboot                 reboot automatically if USB gadget mode was just enabled
+#   --init                   create config, TLS cert and pairing PIN if missing (run by the service)
 #   GADGETCAST_VERSION=v1.2.3  install a specific release instead of the latest
 #   GADGETCAST_NO_AUTOUPDATE=1 do not install the daily update timer
 #   GADGETCAST_BINARY=/path    install this local binary instead of downloading (image builds)
@@ -28,6 +29,8 @@ UPDATER=/usr/local/sbin/gadgetcast-update
 SHARE=/usr/local/share/gadgetcast
 VERSION_FILE="$SHARE/VERSION"
 ENV_FILE=/etc/default/gadgetcast
+CONF_DIR=/etc/gadgetcast
+DATA_DIR=/var/lib/gadgetcast
 UNIT_DIR=/etc/systemd/system
 
 MODE=install
@@ -37,8 +40,9 @@ for arg in "$@"; do
 	--update) MODE=update ;;
 	--uninstall) MODE=uninstall ;;
 	--reboot) REBOOT=1 ;;
+	--init) MODE=init ;;
 	-h | --help)
-		sed -n '2,19p' "$0" 2>/dev/null | sed 's/^# \{0,1\}//'
+		sed -n '2,20p' "$0" 2>/dev/null | sed 's/^# \{0,1\}//'
 		exit 0
 		;;
 	*)
@@ -78,7 +82,7 @@ uninstall() {
 		/etc/modules-load.d/gadgetcast.conf
 	rm -rf "$SHARE"
 	if systemd_running; then systemctl daemon-reload; fi
-	say "gadgetcast removed (config in $ENV_FILE and the dwc2 boot overlay were left in place)"
+	say "gadgetcast removed (config in $CONF_DIR, data in $DATA_DIR and the dwc2 boot overlay were left in place)"
 }
 
 detect_arch() {
@@ -171,6 +175,68 @@ configure_pi() {
 	echo "$needs_reboot"
 }
 
+boot_dir() {
+	for d in /boot/firmware /boot; do
+		if [ -f "$d/config.txt" ]; then
+			echo "$d"
+			return
+		fi
+	done
+}
+
+# First-run setup, idempotent: a self-signed TLS cert for <hostname>.local, a
+# random pairing PIN and a config that passes config.Validate. Runs on the
+# device itself (service ExecStartPre) so every flashed card gets its own key.
+init_config() {
+	mkdir -p "$CONF_DIR" "$DATA_DIR"
+	chmod 700 "$CONF_DIR"
+	if [ ! -s "$CONF_DIR/pin" ]; then
+		pin="$(od -An -N4 -tu4 /dev/urandom | tr -d ' ')"
+		printf '%06d\n' "$((pin % 1000000))" >"$CONF_DIR/pin"
+		chmod 600 "$CONF_DIR/pin"
+	fi
+	if [ ! -s "$CONF_DIR/tls.key" ] || [ ! -s "$CONF_DIR/tls.crt" ]; then
+		have openssl || die "openssl is required to create the TLS certificate"
+		host="$(hostname)"
+		openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes -days 3650 \
+			-subj "/CN=$host.local" \
+			-addext "subjectAltName=DNS:$host.local,DNS:$host,DNS:localhost,IP:127.0.0.1" \
+			-keyout "$CONF_DIR/tls.key" -out "$CONF_DIR/tls.crt" >/dev/null 2>&1 ||
+			die "could not create TLS certificate"
+		chmod 600 "$CONF_DIR/tls.key"
+	fi
+	if [ ! -s "$CONF_DIR/config.json" ]; then
+		cat >"$CONF_DIR/config.json" <<EOF
+{
+  "https": {"enabled": true, "cert_path": "$CONF_DIR/tls.crt", "key_path": "$CONF_DIR/tls.key"},
+  "bind": {"mode": "all"},
+  "pin": {"required": true, "source": "file:$CONF_DIR/pin"}
+}
+EOF
+	fi
+	# Put the PIN where a headless user can read it: the SD card's boot partition.
+	bd="$(boot_dir)"
+	if [ -n "$bd" ] && [ ! -f "$bd/gadgetcast-pin.txt" ]; then
+		printf 'gadgetcast pairing PIN: %s\nOpen https://%s.local in a browser.\n' \
+			"$(cat "$CONF_DIR/pin")" "$(hostname)" >"$bd/gadgetcast-pin.txt" 2>/dev/null || true
+	fi
+}
+
+# Listen on 443 so the URL needs no port, unless something already uses it.
+default_args() {
+	if have ss && ss -ltnH 2>/dev/null | awk '{print $4}' | grep -q ':443$'; then
+		echo ""
+	else
+		echo "-addr :443"
+	fi
+}
+
+url() {
+	port=""
+	grep -q -- '-addr :443' "$ENV_FILE" 2>/dev/null || port=":8443"
+	echo "https://$(hostname).local$port"
+}
+
 ensure_mdns() {
 	have avahi-daemon && return 0
 	have apt-get || return 0
@@ -188,14 +254,15 @@ After=network-online.target
 
 [Service]
 EnvironmentFile=-$ENV_FILE
-ExecStart=$BIN \$GADGETCAST_ARGS
+ExecStartPre=$UPDATER --init
+ExecStart=$BIN -config $CONF_DIR/config.json -data $DATA_DIR \$GADGETCAST_ARGS
 Restart=on-failure
 RestartSec=2
 
 [Install]
 WantedBy=multi-user.target
 EOF
-	[ -f "$ENV_FILE" ] || printf '# Extra command-line arguments for gadgetcast\nGADGETCAST_ARGS=\n' >"$ENV_FILE"
+	[ -f "$ENV_FILE" ] || printf '# Extra command-line arguments for gadgetcast\nGADGETCAST_ARGS="%s"\n' "$(default_args)" >"$ENV_FILE"
 
 	if [ "${GADGETCAST_NO_AUTOUPDATE:-0}" = 1 ]; then
 		rm -f "$UNIT_DIR/gadgetcast-update.service" "$UNIT_DIR/gadgetcast-update.timer"
@@ -253,6 +320,10 @@ main() {
 		uninstall
 		return
 	fi
+	if [ "$MODE" = init ]; then
+		init_config
+		return
+	fi
 
 	arch="$(detect_arch)"
 	current="$(installed_version)"
@@ -296,7 +367,8 @@ main() {
 	say "gadgetcast $version installed"
 	[ "${GADGETCAST_NO_AUTOUPDATE:-0}" = 1 ] || say "automatic updates are on (daily)"
 	if [ -z "${GADGETCAST_BINARY:-}" ]; then
-		say "open https://$(hostname).local in a browser"
+		init_config
+		say "open $(url) in a browser and pair with PIN $(cat "$CONF_DIR/pin")"
 	fi
 	if [ "$needs_reboot" = 1 ] && [ -z "${GADGETCAST_BINARY:-}" ]; then
 		if [ "$REBOOT" = 1 ]; then

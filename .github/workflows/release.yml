@@ -47,6 +47,17 @@ jobs:
           fi
           echo "version=$v" >>"$GITHUB_OUTPUT"
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build web UI
+        run: |
+          # The Studio UI is embedded into the binary (web/embed.go).
+          if [ -f web/package.json ]; then
+            cd web && npm ci && npm run build
+          fi
+
       - name: Test
         run: go test ./...
 
