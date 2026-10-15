@@ -1,0 +1,41 @@
+name: Bug report
+description: Something doesn't work as expected.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: gadgetcast version
+      description: Output of `gadgetcast -version`, or the commit if built from source.
+    validations:
+      required: true
+  - type: dropdown
+    id: board
+    attributes:
+      label: Board
+      options: [Raspberry Pi 4B, Raspberry Pi 5, Raspberry Pi Zero 2 W, Compute Module 4, Other / not a Pi]
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Host computer and app
+      placeholder: e.g. macOS 15 + Zoom, Windows 11 + Teams, ChromeOS + Meet
+  - type: input
+    id: client
+    attributes:
+      label: Browser sending media
+      placeholder: e.g. Safari on iPhone 15, Chrome 130 on Android
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant output of `journalctl -u gadgetcast --since "10 min ago"`. Remove PINs and other secrets.
+      render: text

@@ -1,0 +1,47 @@
+name: Hardware report
+description: Tell us how gadgetcast behaved on your board and host. Works and doesn't-work reports are both useful.
+labels: [hardware-report]
+body:
+  - type: dropdown
+    id: result
+    attributes:
+      label: Result
+      options: [Works, Works with issues, Doesn't work]
+    validations:
+      required: true
+  - type: dropdown
+    id: board
+    attributes:
+      label: Board
+      options: [Raspberry Pi 4B, Raspberry Pi 5, Raspberry Pi Zero 2 W, Compute Module 4, Other]
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Host OS and version
+      placeholder: e.g. Windows 11 23H2
+    validations:
+      required: true
+  - type: input
+    id: apps
+    attributes:
+      label: Apps tested on the host
+      placeholder: e.g. Zoom, Teams, OBS, Chrome
+  - type: checkboxes
+    id: functions
+    attributes:
+      label: What enumerated on the host?
+      options:
+        - label: Webcam (UVC)
+        - label: Microphone (UAC2 capture)
+        - label: Speaker (UAC2 playback)
+  - type: input
+    id: version
+    attributes:
+      label: gadgetcast version
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Resolution and frame rate, latency, cable or power setup, anything odd.

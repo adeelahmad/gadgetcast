@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-gadgetcast turns a Raspberry Pi into a USB composite gadget (UVC webcam + UAC2 mic/speaker) whose media comes from WebRTC sessions served by the Pi to browsers on the LAN. `README.md` is the design doc (architecture, latency budget, USB bandwidth/MJPEG rationale, audio drift, security baseline, phased roadmap); code comments cite its sections (e.g. "README §3.2").
+gadgetcast turns a Raspberry Pi into a USB composite gadget (UVC webcam + UAC2 mic/speaker) whose media comes from WebRTC sessions served by the Pi to browsers on the LAN. `docs/design.md` (formerly the README) is the design doc (architecture, latency budget, USB bandwidth/MJPEG rationale, audio drift, security baseline, phased roadmap); code comments cite its sections as "README §N" (e.g. "README §3.2").
 
 Current state: only the hardware-free, pure-logic core exists. There is no `main` package, no network server, no WebRTC, no USB/ALSA/V4L2 code yet. Everything is stdlib-only Go with **no third-party dependencies**; keep it that way unless a story explicitly introduces one.
 
