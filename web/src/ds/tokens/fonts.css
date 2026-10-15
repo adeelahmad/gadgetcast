@@ -1,0 +1,26 @@
+/* GadgetCast webfonts, bundled locally.
+   The design system's tokens/fonts.css loads these families from the Google Fonts CDN. The Pi can sit on an
+   isolated LAN or tailnet, so the production SPA ships the same families from @fontsource instead (latin subset,
+   only the weights the type scale uses). Family names are unchanged, so typography.css applies as authored. */
+@import "@fontsource/space-grotesk/latin-500.css";
+@import "@fontsource/space-grotesk/latin-600.css";
+@import "@fontsource/space-grotesk/latin-700.css";
+@import "@fontsource/ibm-plex-sans/latin-400.css";
+@import "@fontsource/ibm-plex-sans/latin-500.css";
+@import "@fontsource/ibm-plex-sans/latin-600.css";
+@import "@fontsource/jetbrains-mono/latin-400.css";
+@import "@fontsource/jetbrains-mono/latin-500.css";
+@import "@fontsource/jetbrains-mono/latin-700.css";
+
+/* Material Symbols Rounded, variable on the FILL axis (outline by default, filled = active/selected).
+   font-display:block so ligature names never flash as text. */
+@font-face{
+  font-family:"Material Symbols Rounded";
+  font-style:normal;
+  font-weight:100 700;
+  font-display:block;
+  src:url("../../../node_modules/@fontsource-variable/material-symbols-rounded/files/material-symbols-rounded-latin-fill-normal.woff2") format("woff2-variations");
+}
+
+.material-symbols-rounded,.gc-icon{font-family:"Material Symbols Rounded";font-weight:400;font-style:normal;font-size:inherit;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-feature-settings:"liga";font-feature-settings:"liga";font-variation-settings:"FILL" 0;-webkit-font-smoothing:antialiased;user-select:none;overflow:hidden}
+.gc-icon[data-filled="true"]{font-variation-settings:"FILL" 1}
