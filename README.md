@@ -36,7 +36,7 @@ Open `https://gadgetcast.local` on your phone or laptop, share your camera, mic 
 
 ## Install
 
-**Flash a card (easiest).** Download `gadgetcast-*.img.xz` from the [latest release](https://github.com/adeelahmad/gadgetcast/releases/latest), open it in [Raspberry Pi Imager](https://www.raspberrypi.com/software/) with "Use custom", set Wi-Fi in the customisation screen, flash and boot. The pairing PIN is in `gadgetcast-pin.txt` on the card's boot partition.
+**Flash a card (easiest).** Download `gadgetcast-*-arm64.img.xz` (Pi Zero 2 W, 3, 4, 5) or `gadgetcast-*-armhf.img.xz` (original Pi Zero / Zero W) from the [latest release](https://github.com/adeelahmad/gadgetcast/releases/latest), open it in [Raspberry Pi Imager](https://www.raspberrypi.com/software/) with "Use custom", set Wi-Fi in the customisation screen, flash and boot. The pairing PIN is in `gadgetcast-pin.txt` on the card's boot partition.
 
 **Existing Raspberry Pi OS (or any Linux box).** Run the one-liner above. It installs the latest release, creates a TLS certificate and pairing PIN (printed at the end), enables USB gadget mode on a Pi (reboot once, or append `-s -- --reboot`), starts the service and turns on daily automatic updates. Options: `GADGETCAST_NO_AUTOUPDATE=1`, `GADGETCAST_VERSION=v0.1.0`, `--uninstall`.
 
@@ -90,6 +90,7 @@ Early and moving fast. The Go core (signaling, pairing, session hub, on-air swit
 | Raspberry Pi 4B | Recommended: hardware H.264 decode and JPEG encode, 1080p30 |
 | Raspberry Pi 5 | Software decode, 1080p30 with headroom |
 | Raspberry Pi Zero 2 W | Host-powered "webcam on a stick", 720p target |
+| Raspberry Pi Zero / Zero W | Server, pairing and Studio UI run (armv6 build, about 10 MB RAM); media path unproven on the single ARM11 core, low-resolution target |
 
 Tried it on your hardware and host OS? A [hardware report](https://github.com/adeelahmad/gadgetcast/issues/new?template=hardware-report.yml) is one of the most useful things you can send.
 

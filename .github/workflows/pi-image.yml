@@ -1,9 +1,10 @@
 name: Pi image
 
-# Builds a flashable Raspberry Pi OS Lite (64-bit) image with gadgetcast
-# preinstalled, USB gadget mode enabled, hostname gadgetcast.local and
-# automatic updates on, then attaches it to the release. Called by the release
-# workflow; can also be run by hand for an existing release.
+# Builds flashable Raspberry Pi OS Lite images with gadgetcast preinstalled,
+# USB gadget mode enabled, hostname gadgetcast.local and automatic updates on:
+# 64-bit (arm64: Pi Zero 2 W, 3, 4, 5) and 32-bit (armhf with the armv6 binary,
+# which also boots the original Pi Zero / Zero W). Attaches both to the release.
+# Called by the release workflow; can also be run by hand for an existing release.
 
 on:
   workflow_call:
@@ -24,6 +25,16 @@ jobs:
   image:
     runs-on: ubuntu-latest
     timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: arm64 # Pi Zero 2 W, 3, 4, 5
+            binary: arm64
+            pi-gen: arm64
+          - image: armhf # every Pi, including the original Zero / Zero W (ARMv6)
+            binary: armv6
+            pi-gen: master
     steps:
       - uses: actions/checkout@v4
 
@@ -31,19 +42,23 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
+          ASSET: gadgetcast_linux_${{ matrix.binary }}.tar.gz
+          ARCH: ${{ matrix.binary }}
         run: |
           files=image/stage-gadgetcast/00-install/files
           tmp="$(mktemp -d)"
-          gh release download "$VERSION" -D "$tmp" -p gadgetcast_linux_arm64.tar.gz -p SHA256SUMS
-          (cd "$tmp" && grep ' gadgetcast_linux_arm64.tar.gz$' SHA256SUMS | sha256sum -c -)
-          tar -xzf "$tmp/gadgetcast_linux_arm64.tar.gz" -C "$files"
+          gh release download "$VERSION" -D "$tmp" -p "$ASSET" -p SHA256SUMS
+          (cd "$tmp" && grep " $ASSET\$" SHA256SUMS | sha256sum -c -)
+          tar -xzf "$tmp/$ASSET" -C "$files"
           echo "$VERSION" >"$files/VERSION"
+          echo "$ARCH" >"$files/ARCH"
           ls -l "$files"
 
       - uses: usimd/pi-gen-action@v1
         id: build
         with:
-          image-name: gadgetcast-${{ inputs.version }}
+          pi-gen-version: ${{ matrix.pi-gen }}
+          image-name: gadgetcast-${{ inputs.version }}-${{ matrix.image }}
           stage-list: stage0 stage1 stage2 ./image/stage-gadgetcast
           hostname: gadgetcast
           locale: en_US.UTF-8

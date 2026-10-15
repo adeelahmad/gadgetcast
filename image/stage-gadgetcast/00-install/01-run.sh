@@ -10,6 +10,6 @@ on_chroot <<CHROOT
 GADGETCAST_BINARY=/usr/local/bin/gadgetcast \
 GADGETCAST_VERSION="$(cat files/VERSION)" \
 GADGETCAST_PI=1 \
-GADGETCAST_ARCH=arm64 \
+GADGETCAST_ARCH="$(cat files/ARCH 2>/dev/null || echo arm64)" \
 sh /usr/local/sbin/gadgetcast-update
 CHROOT

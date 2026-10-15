@@ -27,6 +27,22 @@ jobs:
       - name: test
         run: go test -race -cover ./...
 
+  # The original Pi Zero / Zero W is ARMv6 (ARM1176): run the suite on that CPU.
+  go-armv6:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq qemu-user-static
+      - name: test (GOARM=6 under qemu arm1176)
+        env:
+          GOOS: linux
+          GOARCH: arm
+          GOARM: "6"
+        run: go test -exec "qemu-arm-static -cpu arm1176" ./...
+
   web:
     runs-on: ubuntu-latest
     defaults:
