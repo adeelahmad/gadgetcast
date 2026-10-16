@@ -13,3 +13,15 @@ GADGETCAST_PI=1 \
 GADGETCAST_ARCH="$(cat files/ARCH 2>/dev/null || echo arm64)" \
 sh /usr/local/sbin/gadgetcast-update
 CHROOT
+
+# Headless setup without Imager: rename to gadgetcast.env and fill in.
+cat >"${ROOTFS_DIR}/boot/firmware/gadgetcast.env.example" <<'ENV'
+# Rename this file to gadgetcast.env to apply it on the next boot. It is
+# deleted once applied. Every line is optional.
+#HOSTNAME=gadgetcast
+#WIFI_SSID=MyNetwork
+#WIFI_PASSWORD=secret
+#WIFI_COUNTRY=GB
+#PIN=123456
+#GADGETCAST_ARGS="-addr :443"
+ENV

@@ -5,6 +5,11 @@ name: Pi image
 # 64-bit (arm64: Pi Zero 2 W, 3, 4, 5) and 32-bit (armhf with the armv6 binary,
 # which also boots the original Pi Zero / Zero W). Attaches both to the release.
 # Called by the release workflow; can also be run by hand for an existing release.
+#
+# The images keep Raspberry Pi OS's cloud-init first boot, so Raspberry Pi
+# Imager's OS customisation (hostname, user, Wi-Fi, SSH, locale) applies to them.
+# gadgetcast-os-list.json is an Imager repository listing the images that
+# declares this (init_format cloudinit-rpi), so Imager offers customisation.
 
 on:
   workflow_call:
@@ -32,9 +37,13 @@ jobs:
           - image: arm64 # Pi Zero 2 W, 3, 4, 5
             binary: arm64
             pi-gen: arm64
+            description: "Raspberry Pi OS Lite (64-bit) with gadgetcast for Pi Zero 2 W, 3, 4 and 5: a USB webcam and audio device fed from browsers over WebRTC"
+            devices: '["pi5-64bit", "pi4-64bit", "pi3-64bit"]'
           - image: armhf # every Pi, including the original Zero / Zero W (ARMv6)
             binary: armv6
             pi-gen: master
+            description: "Raspberry Pi OS Lite (32-bit) with gadgetcast for every Pi, including the original Pi Zero / Zero W: a USB webcam and audio device fed from browsers over WebRTC"
+            devices: '["pi5-32bit", "pi4-32bit", "pi3-32bit", "pi2-32bit", "pi1-32bit"]'
     steps:
       - uses: actions/checkout@v4
 
@@ -66,6 +75,7 @@ jobs:
           keyboard-layout: English (US)
           timezone: Etc/UTC
           compression: xz
+          enable-cloud-init: 1
           increase-runner-disk-size: true
 
       - name: Attach image to release
@@ -73,6 +83,60 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ inputs.version }}
           IMAGE: ${{ steps.build.outputs.image-path }}
+          REPO: ${{ github.repository }}
+          DESCRIPTION: ${{ matrix.description }}
+          DEVICES: ${{ matrix.devices }}
+          IMAGE_KIND: ${{ matrix.image }}
         run: |
           sha256sum "$IMAGE" | sed 's#  .*/#  #' >"$IMAGE.sha256"
+          name="$(basename "$IMAGE")"
+          extract_size="$(xz -dc "$IMAGE" | wc -c)"
+          extract_sha256="$(xz -dc "$IMAGE" | sha256sum | cut -d' ' -f1)"
+          jq -n \
+            --arg name "gadgetcast $VERSION ($IMAGE_KIND)" \
+            --arg description "$DESCRIPTION" \
+            --arg url "https://github.com/$REPO/releases/download/$VERSION/$name" \
+            --arg date "$(date -u +%F)" \
+            --argjson extract_size "$extract_size" \
+            --arg extract_sha256 "$extract_sha256" \
+            --argjson size "$(stat -c %s "$IMAGE")" \
+            --arg sha256 "$(cut -d' ' -f1 "$IMAGE.sha256")" \
+            --argjson devices "$DEVICES" \
+            '{
+              name: $name,
+              description: $description,
+              url: $url,
+              release_date: $date,
+              extract_size: $extract_size,
+              extract_sha256: $extract_sha256,
+              image_download_size: $size,
+              image_download_sha256: $sha256,
+              init_format: "cloudinit-rpi",
+              devices: $devices
+            }' >"os-list-$IMAGE_KIND.json"
+          cat "os-list-$IMAGE_KIND.json"
           gh release upload "$VERSION" "$IMAGE" "$IMAGE.sha256" --clobber
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: os-list-${{ matrix.image }}
+          path: os-list-${{ matrix.image }}.json
+
+  # One Imager repository listing both images (64-bit first).
+  os-list:
+    needs: image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: os-list-*
+          merge-multiple: true
+      - name: Attach Imager repository to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+          REPO: ${{ github.repository }}
+        run: |
+          jq -s '{os_list: .}' os-list-arm64.json os-list-armhf.json >gadgetcast-os-list.json
+          cat gadgetcast-os-list.json
+          gh release upload "$VERSION" gadgetcast-os-list.json --clobber -R "$REPO"
