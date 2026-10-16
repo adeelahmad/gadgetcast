@@ -12,12 +12,19 @@
 #   --uninstall              remove gadgetcast, its service and the update timer
 #   --reboot                 reboot automatically if USB gadget mode was just enabled
 #   --init                   create config, TLS cert and pairing PIN if missing (run by the service)
+#   --boot-config            apply gadgetcast.env from the boot partition (run at boot, see below)
 #   GADGETCAST_VERSION=v1.2.3  install a specific release instead of the latest
 #   GADGETCAST_NO_AUTOUPDATE=1 do not install the daily update timer
 #   GADGETCAST_BINARY=/path    install this local binary instead of downloading (image builds)
 #   GADGETCAST_PI=1            force Raspberry Pi boot configuration (image builds / chroot)
 #   GADGETCAST_ARCH=arm64      override detected architecture
 #   GADGETCAST_REPO=owner/name install from a fork
+#
+# Headless setup without Raspberry Pi Imager: put a gadgetcast.env file on the
+# SD card's boot partition. It is applied early on the next boot and then
+# deleted, because it may hold passwords. KEY=value lines, all optional:
+#   HOSTNAME=studio  WIFI_SSID=MyNetwork  WIFI_PASSWORD=secret  WIFI_COUNTRY=GB
+#   PIN=123456       GADGETCAST_ARGS="-addr :443"
 set -eu
 
 REPO="${GADGETCAST_REPO:-adeelahmad/gadgetcast}"
@@ -41,8 +48,9 @@ for arg in "$@"; do
 	--uninstall) MODE=uninstall ;;
 	--reboot) REBOOT=1 ;;
 	--init) MODE=init ;;
+	--boot-config) MODE=boot-config ;;
 	-h | --help)
-		sed -n '2,20p' "$0" 2>/dev/null | sed 's/^# \{0,1\}//'
+		sed -n '2,27p' "$0" 2>/dev/null | sed 's/^# \{0,1\}//'
 		exit 0
 		;;
 	*)
@@ -75,9 +83,9 @@ systemd_running() { [ -d /run/systemd/system ]; }
 
 uninstall() {
 	if have systemctl; then
-		systemctl disable --now gadgetcast.service gadgetcast-update.timer 2>/dev/null || true
+		systemctl disable --now gadgetcast.service gadgetcast-update.timer gadgetcast-boot-config.service 2>/dev/null || true
 	fi
-	rm -f "$BIN" "$UPDATER" "$UNIT_DIR/gadgetcast.service" \
+	rm -f "$BIN" "$UPDATER" "$UNIT_DIR/gadgetcast.service" "$UNIT_DIR/gadgetcast-boot-config.service" \
 		"$UNIT_DIR/gadgetcast-update.service" "$UNIT_DIR/gadgetcast-update.timer" \
 		/etc/modules-load.d/gadgetcast.conf
 	rm -rf "$SHARE"
@@ -195,15 +203,19 @@ init_config() {
 		printf '%06d\n' "$((pin % 1000000))" >"$CONF_DIR/pin"
 		chmod 600 "$CONF_DIR/pin"
 	fi
-	if [ ! -s "$CONF_DIR/tls.key" ] || [ ! -s "$CONF_DIR/tls.crt" ]; then
+	# Reissue the cert when the hostname changes, e.g. one set in Raspberry Pi
+	# Imager's customisation screen and applied by cloud-init on first boot.
+	host="$(hostname)"
+	if [ ! -s "$CONF_DIR/tls.key" ] || [ ! -s "$CONF_DIR/tls.crt" ] ||
+		[ "$(cat "$CONF_DIR/tls.host" 2>/dev/null)" != "$host" ]; then
 		have openssl || die "openssl is required to create the TLS certificate"
-		host="$(hostname)"
 		openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:prime256v1 -nodes -days 3650 \
 			-subj "/CN=$host.local" \
 			-addext "subjectAltName=DNS:$host.local,DNS:$host,DNS:localhost,IP:127.0.0.1" \
 			-keyout "$CONF_DIR/tls.key" -out "$CONF_DIR/tls.crt" >/dev/null 2>&1 ||
 			die "could not create TLS certificate"
 		chmod 600 "$CONF_DIR/tls.key"
+		echo "$host" >"$CONF_DIR/tls.host"
 	fi
 	if [ ! -s "$CONF_DIR/config.json" ]; then
 		cat >"$CONF_DIR/config.json" <<EOF
@@ -216,10 +228,86 @@ EOF
 	fi
 	# Put the PIN where a headless user can read it: the SD card's boot partition.
 	bd="$(boot_dir)"
-	if [ -n "$bd" ] && [ ! -f "$bd/gadgetcast-pin.txt" ]; then
-		printf 'gadgetcast pairing PIN: %s\nOpen https://%s.local in a browser.\n' \
-			"$(cat "$CONF_DIR/pin")" "$(hostname)" >"$bd/gadgetcast-pin.txt" 2>/dev/null || true
+	if [ -n "$bd" ]; then
+		note="$(printf 'gadgetcast pairing PIN: %s\nOpen https://%s.local in a browser.' \
+			"$(cat "$CONF_DIR/pin")" "$host")"
+		[ "$(cat "$bd/gadgetcast-pin.txt" 2>/dev/null)" = "$note" ] ||
+			echo "$note" >"$bd/gadgetcast-pin.txt" 2>/dev/null || true
 	fi
+}
+
+# Value of KEY in a KEY=value env file, with surrounding quotes removed. The
+# file is parsed, never sourced, so it cannot run commands.
+env_value() {
+	sed -n "s/^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}$1[[:space:]]*=[[:space:]]*//p" "$2" |
+		tail -n 1 | tr -d '\r' | sed -e 's/^"\(.*\)"$/\1/' -e "s/^'\(.*\)'\$/\1/"
+}
+
+# Applies <boot>/gadgetcast.env (see the header) and deletes it. Runs before
+# networking starts, so Wi-Fi and the hostname are in place for this boot.
+boot_config() {
+	bd="$(boot_dir)"
+	f="$bd/gadgetcast.env"
+	[ -n "$bd" ] && [ -f "$f" ] || return 0
+
+	host="$(env_value HOSTNAME "$f")"
+	if [ -n "$host" ]; then
+		case "$host" in
+		*[!A-Za-z0-9-]* | -* | *-) die "gadgetcast.env: invalid HOSTNAME: $host" ;;
+		esac
+		echo "$host" >/etc/hostname
+		hostname "$host" 2>/dev/null || true
+		if grep -q '^127\.0\.1\.1' /etc/hosts 2>/dev/null; then
+			sed -i "s/^127\.0\.1\.1.*/127.0.1.1\t$host/" /etc/hosts
+		else
+			printf '127.0.1.1\t%s\n' "$host" >>/etc/hosts
+		fi
+	fi
+
+	country="$(env_value WIFI_COUNTRY "$f")"
+	if [ -n "$country" ]; then
+		if have raspi-config; then
+			raspi-config nonint do_wifi_country "$country" >/dev/null 2>&1 || true
+		elif have iw; then
+			iw reg set "$country" 2>/dev/null || true
+		fi
+	fi
+
+	ssid="$(env_value WIFI_SSID "$f")"
+	if [ -n "$ssid" ]; then
+		psk="$(env_value WIFI_PASSWORD "$f")"
+		nm=/etc/NetworkManager/system-connections/gadgetcast-wifi.nmconnection
+		mkdir -p "$(dirname "$nm")"
+		{
+			printf '[connection]\nid=%s\ntype=wifi\nautoconnect=true\n\n' "$ssid"
+			printf '[wifi]\nmode=infrastructure\nssid=%s\n\n' "$ssid"
+			if [ -n "$psk" ]; then
+				printf '[wifi-security]\nkey-mgmt=wpa-psk\npsk=%s\n\n' "$psk"
+			fi
+			printf '[ipv4]\nmethod=auto\n\n[ipv6]\nmethod=auto\n'
+		} >"$nm"
+		chmod 600 "$nm"
+	fi
+
+	pin="$(env_value PIN "$f")"
+	if [ -n "$pin" ]; then
+		case "$pin" in
+		*[!0-9]*) die "gadgetcast.env: PIN must be digits" ;;
+		esac
+		mkdir -p "$CONF_DIR"
+		chmod 700 "$CONF_DIR"
+		echo "$pin" >"$CONF_DIR/pin"
+		chmod 600 "$CONF_DIR/pin"
+	fi
+
+	if grep -Eq '^[[:space:]]*(export[[:space:]]+)?GADGETCAST_ARGS[[:space:]]*=' "$f"; then
+		mkdir -p "$(dirname "$ENV_FILE")"
+		printf '# Extra command-line arguments for gadgetcast\nGADGETCAST_ARGS="%s"\n' \
+			"$(env_value GADGETCAST_ARGS "$f")" >"$ENV_FILE"
+	fi
+
+	rm -f "$f"
+	echo "gadgetcast: applied gadgetcast.env from $bd"
 }
 
 # Listen on 443 so the URL needs no port, unless something already uses it.
@@ -250,7 +338,8 @@ write_units() {
 [Unit]
 Description=gadgetcast WebRTC to USB webcam/audio bridge
 Wants=network-online.target
-After=network-online.target
+# cloud-init applies Raspberry Pi Imager's hostname, user and Wi-Fi settings.
+After=network-online.target cloud-init.target
 
 [Service]
 EnvironmentFile=-$ENV_FILE
@@ -263,6 +352,24 @@ RestartSec=2
 WantedBy=multi-user.target
 EOF
 	[ -f "$ENV_FILE" ] || printf '# Extra command-line arguments for gadgetcast\nGADGETCAST_ARGS="%s"\n' "$(default_args)" >"$ENV_FILE"
+
+	cat >"$UNIT_DIR/gadgetcast-boot-config.service" <<EOF
+[Unit]
+Description=Apply gadgetcast.env from the boot partition
+DefaultDependencies=no
+After=local-fs.target
+Before=network-pre.target NetworkManager.service cloud-init-local.service gadgetcast.service
+Wants=network-pre.target
+ConditionPathExists=|/boot/firmware/gadgetcast.env
+ConditionPathExists=|/boot/gadgetcast.env
+
+[Service]
+Type=oneshot
+ExecStart=$UPDATER --boot-config
+
+[Install]
+WantedBy=multi-user.target
+EOF
 
 	if [ "${GADGETCAST_NO_AUTOUPDATE:-0}" = 1 ]; then
 		rm -f "$UNIT_DIR/gadgetcast-update.service" "$UNIT_DIR/gadgetcast-update.timer"
@@ -295,7 +402,7 @@ EOF
 
 enable_units() {
 	have systemctl || return 0
-	units=gadgetcast.service
+	units="gadgetcast.service gadgetcast-boot-config.service"
 	[ -f "$UNIT_DIR/gadgetcast-update.timer" ] && units="$units gadgetcast-update.timer"
 	if systemd_running; then
 		systemctl daemon-reload
@@ -322,6 +429,10 @@ main() {
 	fi
 	if [ "$MODE" = init ]; then
 		init_config
+		return
+	fi
+	if [ "$MODE" = boot-config ]; then
+		boot_config
 		return
 	fi
 
