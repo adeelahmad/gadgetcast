@@ -36,7 +36,7 @@ Open `https://gadgetcast.local` on your phone or laptop, share your camera, mic 
 
 ## Install
 
-**Flash a card (easiest).** In [Raspberry Pi Imager](https://www.raspberrypi.com/software/), add `https://github.com/adeelahmad/gadgetcast/releases/latest/download/gadgetcast-os-list.json` as a custom repository (App Options → Content Repository, or `rpi-imager --repo <url>`), pick your Pi and *gadgetcast*, then fill in the customisation screen: Wi-Fi, hostname, user and password, SSH, locale and time zone are all applied on first boot. Flashing a downloaded `gadgetcast-*.img.xz` with "Use custom" works too. Without Imager, rename `gadgetcast.env.example` on the boot partition to `gadgetcast.env` and set `HOSTNAME`, `WIFI_SSID`, `WIFI_PASSWORD`, `WIFI_COUNTRY`, `PIN` or `GADGETCAST_ARGS`; it is applied on the next boot and then deleted. The same file works on any Pi running the installer. The pairing PIN is in `gadgetcast-pin.txt` on the card's boot partition, and the site is at `https://<hostname>.local` (default `gadgetcast.local`).
+**Flash a card (easiest).** In [Raspberry Pi Imager](https://www.raspberrypi.com/software/), add `https://github.com/adeelahmad/gadgetcast/releases/latest/download/gadgetcast-os-list.json` as a custom repository (App Options → Content Repository, or `rpi-imager --repo <url>`), pick your Pi and *gadgetcast*, then fill in the customisation screen: Wi-Fi, hostname, user and password, SSH, locale and time zone are all applied on first boot. Flashing a downloaded image from the [latest release](https://github.com/adeelahmad/gadgetcast/releases/latest) with "Use custom" works too: `gadgetcast-*-arm64.img.xz` for Pi Zero 2 W, 3, 4, 5, or `gadgetcast-*-armhf.img.xz` for the original Pi Zero / Zero W. Without Imager, rename `gadgetcast.env.example` on the boot partition to `gadgetcast.env` and set `HOSTNAME`, `WIFI_SSID`, `WIFI_PASSWORD`, `WIFI_COUNTRY`, `PIN` or `GADGETCAST_ARGS`; it is applied on the next boot and then deleted. The same file works on any Pi running the installer. The pairing PIN is in `gadgetcast-pin.txt` on the card's boot partition, and the site is at `https://<hostname>.local` (default `gadgetcast.local`).
 
 **Existing Raspberry Pi OS (or any Linux box).** Run the one-liner above. It installs the latest release, creates a TLS certificate and pairing PIN (printed at the end), enables USB gadget mode on a Pi (reboot once, or append `-s -- --reboot`), starts the service and turns on daily automatic updates. Options: `GADGETCAST_NO_AUTOUPDATE=1`, `GADGETCAST_VERSION=v0.1.0`, `--uninstall`.
 
@@ -90,6 +90,7 @@ Early and moving fast. The Go core (signaling, pairing, session hub, on-air swit
 | Raspberry Pi 4B | Recommended: hardware H.264 decode and JPEG encode, 1080p30 |
 | Raspberry Pi 5 | Software decode, 1080p30 with headroom |
 | Raspberry Pi Zero 2 W | Host-powered "webcam on a stick", 720p target |
+| Raspberry Pi Zero / Zero W | Server, pairing and Studio UI run (armv6 build, about 10 MB RAM); media path unproven on the single ARM11 core, low-resolution target |
 
 Tried it on your hardware and host OS? A [hardware report](https://github.com/adeelahmad/gadgetcast/issues/new?template=hardware-report.yml) is one of the most useful things you can send.
 
