@@ -171,7 +171,9 @@ configure_pi() {
 	needs_reboot=0
 	cfg=/boot/firmware/config.txt
 	[ -f "$cfg" ] || cfg=/boot/config.txt
-	if [ -f "$cfg" ] && ! grep -q '^dtoverlay=dwc2' "$cfg"; then
+	# Match our own line: stock Raspberry Pi OS already has a [cm5]
+	# dtoverlay=dwc2,dr_mode=host, which must not count as gadget mode.
+	if [ -f "$cfg" ] && ! grep -q '^dtoverlay=dwc2,dr_mode=peripheral' "$cfg"; then
 		printf '\n[all]\n# gadgetcast: USB gadget (webcam + audio) mode\ndtoverlay=dwc2,dr_mode=peripheral\n' >>"$cfg"
 		needs_reboot=1
 	fi
