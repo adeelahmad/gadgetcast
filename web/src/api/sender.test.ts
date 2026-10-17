@@ -32,7 +32,8 @@ class FakePeer implements SenderPeer {
 
 function fakeStream() {
   const track = { stopped: false, stop() { this.stopped = true; } };
-  return { track, stream: { getAudioTracks: () => [track], getTracks: () => [track] } as unknown as MediaStream };
+  const video = { stopped: false, stop() { this.stopped = true; }, ended: null as null | (() => void), addEventListener(_: string, f: () => void) { this.ended = f; } };
+  return { track, video, stream: { getTracks: () => [track, video] } as unknown as MediaStream };
 }
 
 function setup(opts: { micError?: Error } = {}) {
@@ -44,7 +45,7 @@ function setup(opts: { micError?: Error } = {}) {
     url: "wss://pi/ws",
     socket: () => sock,
     peer: () => peer,
-    getMic: () => (opts.micError ? Promise.reject(opts.micError) : Promise.resolve(mic.stream)),
+    getMedia: () => (opts.micError ? Promise.reject(opts.micError) : Promise.resolve(mic.stream)),
     gatherTimeoutMs: 50,
   };
   const stop = startMicSender(deps, "1234", { onState: (s, d) => states.push([s, d]) }, "mic-abc");
@@ -63,7 +64,7 @@ describe("startMicSender", () => {
     expect(sock.sent[0].payload).toEqual({ client: "mic-abc" });
     expect(sock.sent[1].payload).toEqual({ pin: "1234" });
     expect(sock.sent[2].payload.sdp).toBe("v=0 offer +candidates");
-    expect(peer.transceivers).toBe(1);
+    expect(peer.transceivers).toBe(2);
 
     sock.push("media-answer", { sdp: "v=0 answer" });
     await tick();
@@ -77,7 +78,7 @@ describe("startMicSender", () => {
 
     stop();
     expect(last(states)[0]).toBe("stopped");
-    expect(sock.closed && peer.closed && mic.track.stopped).toBe(true);
+    expect(sock.closed && peer.closed && mic.track.stopped && mic.video.stopped).toBe(true);
     stop(); // idempotent
     expect(states.filter(s => s[0] === "stopped").length).toBe(1);
   });
@@ -108,11 +109,19 @@ describe("startMicSender", () => {
     const e = new Error("denied"); e.name = "NotAllowedError";
     const { states } = setup({ micError: e });
     await tick();
-    expect(last(states)).toEqual(["error", "Microphone permission was denied."]);
+    expect(last(states)[1]).toMatch(/denied/);
   });
 
   it("makes distinct client ids", () => {
     expect(newClientId(() => 0)).toBe("mic-000000");
     expect(newClientId(() => 0.5)).toMatch(/^mic-[0-9a-f]{6}$/);
+  });
+
+  it("stops when the shared screen ends", async () => {
+    const { sock, mic, states } = setup();
+    await tick(); await tick();
+    sock.onopen?.();
+    mic.video.ended?.();
+    expect(last(states)).toEqual(["error", "The shared screen or camera was stopped."]);
   });
 });

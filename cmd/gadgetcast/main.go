@@ -49,6 +49,7 @@ func run() error {
 		dev        = flag.Bool("dev", false, "development mode: plain HTTP on localhost, config optional")
 		showVer    = flag.Bool("version", false, "print the version and exit")
 		audioDev   = flag.String("audio-device", media.DefaultALSADevice, "ALSA device the on-air client's audio is played to (the USB mic)")
+		videoDev   = flag.String("video-device", media.AutoUVCDevice, "V4L2 node of the USB webcam gadget the on-air client's video is played to (\"auto\" finds it)")
 	)
 	flag.Parse()
 	if *showVer {
@@ -97,7 +98,12 @@ func run() error {
 		return err
 	}
 	go sink.Run(ctx)
-	bridge, err := media.New(sink, media.Options{})
+	vsink, err := media.NewGstVideoSink(*videoDev, logger)
+	if err != nil {
+		return err
+	}
+	go vsink.Run(ctx)
+	bridge, err := media.New(sink, media.Options{Video: vsink})
 	if err != nil {
 		return err
 	}

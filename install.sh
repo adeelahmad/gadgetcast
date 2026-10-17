@@ -335,15 +335,15 @@ ensure_mdns() {
 	DEBIAN_FRONTEND=noninteractive apt-get install -y -qq avahi-daemon >/dev/null 2>&1 || true
 }
 
-# GStreamer decodes the on-air browser's Opus audio and plays it into the
-# USB microphone (internal/media).
+# GStreamer decodes the on-air browser's Opus audio and H.264 video and plays
+# them into the USB microphone and webcam (internal/media).
 ensure_media() {
-	have gst-launch-1.0 && return 0
+	have gst-launch-1.0 && gst-inspect-1.0 uvcsink >/dev/null 2>&1 && return 0
 	have apt-get || return 0
 	say "installing GStreamer for USB audio"
 	DEBIAN_FRONTEND=noninteractive apt-get install -y -qq gstreamer1.0-tools gstreamer1.0-plugins-base \
-		gstreamer1.0-plugins-good gstreamer1.0-alsa >/dev/null 2>&1 ||
-		say "could not install GStreamer; USB audio stays off until it is installed"
+		gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-alsa >/dev/null 2>&1 ||
+		say "could not install GStreamer; USB audio and video stay off until it is installed"
 }
 
 write_units() {

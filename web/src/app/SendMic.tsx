@@ -1,6 +1,7 @@
-/* Send this device's microphone to the Pi: the host computer hears it as the GadgetCast USB mic. */
+/* Send this device's microphone, and optionally its camera or screen, to the Pi: the host computer sees them
+   as the GadgetCast USB mic and webcam. */
 import { useEffect, useRef, useState } from "react";
-import { Badge, Button, Icon, Input, Modal } from "../ds";
+import { Badge, Button, Icon, Input, Modal, Tabs, type TabItem } from "../ds";
 import { wsUrl } from "../api/events";
 import { startMicSender, type SendState, type SenderPeer, type SenderSocket } from "../api/sender";
 
@@ -8,11 +9,38 @@ const PIN_KEY = "gadgetcast.pin";
 const readPin = () => { try { return sessionStorage.getItem(PIN_KEY) ?? ""; } catch { return ""; } };
 const savePin = (p: string) => { try { sessionStorage.setItem(PIN_KEY, p); } catch { /* private mode */ } };
 
+export type SendSource = "mic" | "camera" | "screen";
+
+const MIC: MediaTrackConstraints = { echoCancellation: true, noiseSuppression: true, autoGainControl: true };
+const canShareScreen = () => typeof navigator !== "undefined" && !!navigator.mediaDevices && "getDisplayMedia" in navigator.mediaDevices;
+
+/** Source choices this browser supports (phones cannot share their screen). */
+export function sourceItems(): TabItem<SendSource>[] {
+  const items: TabItem<SendSource>[] = [{ value: "mic", label: "Mic", icon: "mic" }, { value: "camera", label: "Camera + mic", icon: "videocam" }];
+  if (canShareScreen()) items.push({ value: "screen", label: "Screen + mic", icon: "screen_share" });
+  return items;
+}
+
+async function openSource(src: SendSource): Promise<MediaStream> {
+  if (src === "mic") return navigator.mediaDevices.getUserMedia({ audio: MIC });
+  if (src === "camera") {
+    return navigator.mediaDevices.getUserMedia({ audio: MIC, video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 }, facingMode: "user" } });
+  }
+  const screen = await navigator.mediaDevices.getDisplayMedia({ video: { frameRate: { ideal: 30 } } });
+  try {
+    const mic = await navigator.mediaDevices.getUserMedia({ audio: MIC });
+    return new MediaStream([...screen.getVideoTracks(), ...mic.getAudioTracks()]);
+  } catch {
+    return screen; // screen only, if the mic was refused
+  }
+}
+
 const LABEL: Record<SendState, string> = { idle: "Off", connecting: "Connecting", "on-air": "On air", error: "Stopped", stopped: "Off" };
 
 /** Sender state shared by the Studio dialog and the phone page (/send). */
 export function useMicSender() {
   const [pin, setPin] = useState(readPin);
+  const [source, setSource] = useState<SendSource>("mic");
   const [state, setState] = useState<SendState>("idle");
   const [detail, setDetail] = useState<string | undefined>();
   const stopRef = useRef<(() => void) | null>(null);
@@ -28,24 +56,24 @@ export function useMicSender() {
       url: wsUrl("/ws"),
       socket: url => new WebSocket(url) as unknown as SenderSocket,
       peer: () => new RTCPeerConnection() as unknown as SenderPeer,
-      getMic: () => navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } }),
+      getMedia: () => openSource(source),
     }, pin.trim(), { onState: (s, d) => { setState(s); setDetail(d); } });
   };
   const stop = () => { stopRef.current?.(); stopRef.current = null; };
-  return { pin, setPin, state, detail, supported, busy, start, stop };
+  return { pin, setPin, source, setSource, state, detail, supported, busy, start, stop };
 }
 
 export const STATE_LABEL = LABEL;
 
 export function SendMic({ live, onClose }: { live: boolean; onClose: () => void }) {
-  const { pin, setPin, state, detail, supported, busy, start, stop } = useMicSender();
+  const { pin, setPin, source, setSource, state, detail, supported, busy, start, stop } = useMicSender();
   const close = () => { stop(); onClose(); };
 
   const why = !live ? "Connect to a GadgetCast Pi to send audio; the offline demo has no device."
     : !supported ? "This browser cannot send audio (it needs WebRTC over https://)." : null;
 
   return (
-    <Modal open eyebrow="This device · microphone" title="Send my mic to the USB host" icon="mic" width={480} onClose={close}
+    <Modal open eyebrow="This device · mic, camera or screen" title="Send to the USB host" icon="mic" width={480} onClose={close}
       footer={<>
         <span style={{ flex: 1, alignSelf: "center", font: "var(--type-meta)", color: "var(--text-faint)" }}>Keep this tab open while sending</span>
         <Button variant="ghost" onClick={close}>Close</Button>
@@ -53,14 +81,15 @@ export function SendMic({ live, onClose }: { live: boolean; onClose: () => void 
           : <Button variant="live" icon="mic" onClick={start} disabled={!!why || pin.trim() === ""}>Start sending</Button>}
       </>}>
       <span style={{ font: "var(--type-body)", color: "var(--text-body)" }}>
-        The computer the Pi is plugged into hears this microphone as <b>GadgetCast</b>. Pick it as the microphone in Zoom, Teams or OBS there.
+        The computer the Pi is plugged into sees <b>GadgetCast</b> as a microphone and webcam. Pick it in Zoom, Teams or OBS there.
       </span>
+      {!busy ? <Tabs<SendSource> size="sm" value={source} onChange={setSource} items={sourceItems()} /> : null}
       <Input label="Pairing PIN" value={pin} onChange={e => setPin(e.target.value)} inputMode="numeric" autoComplete="one-time-code" mono
         hint="Printed by the installer, and in gadgetcast-pin.txt on the SD card" disabled={busy} />
       <div role="status" aria-live="polite" style={{ display: "flex", alignItems: "center", gap: "var(--sp-4)" }}>
         <Badge tone={state === "on-air" ? "live" : state === "error" ? "err" : "neutral"} dot solid={state === "on-air"}>{LABEL[state]}</Badge>
         <span style={{ font: "var(--type-meta)", color: state === "error" ? "var(--st-err)" : "var(--text-muted)" }}>
-          {why ?? detail ?? (state === "on-air" ? "The host is hearing this microphone." : state === "connecting" ? "Pairing and connecting…" : "")}
+          {why ?? detail ?? (state === "on-air" ? (source === "mic" ? "The host is hearing this microphone." : "The host is seeing and hearing this device.") : state === "connecting" ? "Pairing and connecting…" : "")}
         </span>
       </div>
       <span style={{ font: "var(--type-meta)", color: "var(--text-faint)" }}>On a phone, open <b>{window.location.host}/send</b> for a one-button version.</span>
