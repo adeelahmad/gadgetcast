@@ -109,15 +109,25 @@ detect_arch() {
 }
 
 # Latest release tag, resolved from the /releases/latest redirect so no API
-# token or rate limit is involved.
+# token or rate limit is involved. /latest skips prereleases: a fresh install
+# falls back to the newest prerelease (from the releases feed), while the
+# update timer prints nothing so it only ever follows full releases.
 latest_version() {
-	url="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "$BASE_URL/latest")" ||
-		die "could not reach GitHub"
+	url="$(curl -fsSLI -o /dev/null -w '%{url_effective}' "$BASE_URL/latest" 2>/dev/null)" || url=
 	tag="${url##*/}"
 	case "$tag" in
-	v*) echo "$tag" ;;
-	*) die "no published release found at $BASE_URL" ;;
+	v*)
+		echo "$tag"
+		return
+		;;
 	esac
+	[ "$MODE" = update ] && return
+	tag="$(curl -fsSL "$BASE_URL.atom" 2>/dev/null | grep -o '/releases/tag/v[^"<]*' | head -n 1)" ||
+		die "could not reach GitHub"
+	tag="${tag##*/}"
+	[ -n "$tag" ] || die "no published release found at $BASE_URL"
+	say "no full release yet; installing prerelease $tag" >&2
+	echo "$tag"
 }
 
 installed_version() { cat "$VERSION_FILE" 2>/dev/null || true; }
@@ -480,6 +490,12 @@ main() {
 	else
 		have curl || die "curl is required"
 		version="${GADGETCAST_VERSION:-$(latest_version)}"
+		if [ -z "$version" ]; then
+			# latest_version's die only left its subshell; updates without a full release are a no-op
+			[ "$MODE" = update ] || die "no release to install"
+			echo "gadgetcast: no full release to update to; staying on ${current:-none}"
+			return
+		fi
 		if [ "$version" = "$current" ] && [ -x "$BIN" ]; then
 			say "gadgetcast $version is already the latest"
 			[ "$MODE" = update ] && return
