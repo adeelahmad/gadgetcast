@@ -117,7 +117,7 @@ export function OnAirIndicator({ state = "off", label, source, compact = false, 
         border: "1px solid " + (on ? "var(--sig-live-dim)" : arm ? "var(--st-warn-dim)" : "var(--line-border)"), ...style,
       }}>
       <span className={on ? "gc-pulse" : undefined} style={{ width: 7, height: 7, borderRadius: "var(--r-pill)", background: hue, flex: "0 0 auto" }} />
-      <span style={{ font: "var(--type-caps)", letterSpacing: "var(--ls-caps)", textTransform: "uppercase", color: hue, whiteSpace: "nowrap" }}>{text}</span>
+      <span style={{ font: "var(--type-caps)", letterSpacing: "var(--ls-caps)", textTransform: "uppercase", color: on || arm ? hue : "var(--text-muted)", whiteSpace: "nowrap" }}>{text}</span>
       {source && !compact ? <span style={{ font: "var(--type-meta)", color: "var(--text-muted)", borderLeft: "1px solid var(--line-hairline)", paddingLeft: "var(--sp-3)", whiteSpace: "nowrap", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis" }}>{source}</span> : null}
       {on ? <Icon name="usb" size="xs" style={{ color: hue }} /> : null}
     </div>

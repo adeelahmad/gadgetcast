@@ -42,7 +42,7 @@ export function Header({ studio, backend, reason }: { studio: Studio; backend: B
       <button type="button" onClick={() => act.setPalette(true)} data-testid="search"
         style={{ flex: "1 1 200px", minWidth: 0, maxWidth: 380, display: "flex", alignItems: "center", gap: "var(--sp-4)", height: "var(--ctl-md)", padding: "0 var(--sp-4)", background: "var(--surface-input)", border: "1px solid var(--line-strong)", borderRadius: "var(--r-sm)", cursor: "text" }}>
         <Icon name="search" size="sm" style={{ color: "var(--text-faint)" }} />
-        <span style={{ flex: 1, minWidth: 0, textAlign: "left", font: "var(--type-ui)", color: "var(--text-disabled)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Search nodes, devices, pipelines…</span>
+        <span style={{ flex: 1, minWidth: 0, textAlign: "left", font: "var(--type-ui)", color: "var(--text-faint)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>Search nodes, devices, pipelines…</span>
         <kbd>⌘K</kbd>
       </button>
 
@@ -93,7 +93,7 @@ export function StatusBar({ studio, backend }: { studio: Studio; backend: Backen
       {m ? item("ram", Math.round(m.ramUsedMB) + " / " + Math.round(m.ramTotalMB) + " MB") : null}
       {m ? item("up", fmtUptime(m.uptimeS)) : null}
       <div style={{ flex: 1 }} />
-      {item("autosave", s.autosave ? "on · 30 s" : "off", s.autosave ? "var(--st-ok)" : "var(--text-disabled)")}
+      {item("autosave", s.autosave ? "on · 30 s" : "off", s.autosave ? "var(--st-ok)" : "var(--text-faint)")}
       {item("graph", s.doc.nodes.length + " nodes · " + s.doc.edges.length + " cables")}
     </footer>
   );

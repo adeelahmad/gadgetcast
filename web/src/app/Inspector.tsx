@@ -26,7 +26,7 @@ export function Inspector({ studio, floating = false }: { studio: Studio; floati
   const m = s.status?.metrics;
   const live = s.status?.running != null && s.status.running === s.doc.id;
   return (
-    <aside className="gc-scroll" data-ui data-testid="inspector" style={floating
+    <aside className="gc-scroll" tabIndex={0} aria-label="Inspector" data-ui data-testid="inspector" style={floating
       ? { position: "absolute", right: 16, top: 64, bottom: 16, width: "var(--w-inspector)", zIndex: 30, overflow: "auto", background: "var(--surface-panel)", border: "1px solid var(--line-border)", borderRadius: "var(--r-lg)" }
       : { width: "var(--w-inspector)", flex: "0 0 auto", overflow: "auto", background: "var(--surface-panel)", borderLeft: "1px solid var(--line-border)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, height: 44, padding: "0 8px 0 12px", borderBottom: "1px solid var(--line-hairline)", position: "sticky", top: 0, background: "var(--surface-panel)", zIndex: 2 }}>

@@ -111,7 +111,7 @@ export function QuickCapture({ mode: initial, onClose, onDone }: { mode: Capture
       <div style={{ position: "relative", height: 240, borderRadius: "var(--r-md)", overflow: "hidden", border: "1px solid " + (busy === "recording" ? "var(--sig-live-dim)" : "var(--line-border)"), background: "var(--surface-input)", display: "grid", placeItems: "center" }}>
         {stream && wantsVideo ? <video ref={videoRef} autoPlay muted playsInline style={{ width: "100%", height: "100%", objectFit: "contain", background: "var(--ink-1000)" }} /> : null}
         {stream && !wantsVideo ? <span style={{ display: "flex", alignItems: "center", gap: "var(--sp-3)", font: "var(--type-meta)", color: "var(--sig-audio)" }}><Icon name="mic" size="md" />MICROPHONE OPEN</span> : null}
-        {!stream ? <span style={{ font: "var(--type-meta)", color: "var(--text-disabled)", textAlign: "center" }}>NO SIGNAL<br /><span style={{ fontSize: "var(--fs-tick)" }}>open a source to preview it</span></span> : null}
+        {!stream ? <span style={{ font: "var(--type-meta)", color: "var(--text-faint)", textAlign: "center" }}>NO SIGNAL<br /><span style={{ fontSize: "var(--fs-tick)" }}>open a source to preview it</span></span> : null}
         {busy === "recording" ? <span style={{ position: "absolute", top: 8, left: 8 }}><Badge tone="live" solid>REC · {left} s</Badge></span> : null}
       </div>
 

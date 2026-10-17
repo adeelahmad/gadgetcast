@@ -53,7 +53,7 @@ export function PipelineNode({ title, subtitle, icon, nodeClass = "source", inpu
         border: "1px solid " + (selected ? "var(--brand)" : "var(--line-border)"), boxShadow: selected ? "0 0 0 1px var(--brand)" : "none",
         opacity: disabled ? 0.5 : 1, filter: disabled ? "grayscale(.7)" : undefined, userSelect: "none", ...style,
       }}>
-      <header style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px 8px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px 8px" }}>
         <span style={{ width: 28, height: 28, flex: "0 0 auto", borderRadius: "var(--r-sm)", background: tint, display: "grid", placeItems: "center" }}>
           <Icon name={icon || "widgets"} size="sm" style={{ color: hue }} />
         </span>
@@ -64,7 +64,7 @@ export function PipelineNode({ title, subtitle, icon, nodeClass = "source", inpu
         {state === "live" ? <span className="gc-pulse" style={{ width: 7, height: 7, flex: "0 0 auto", borderRadius: "50%", background: "var(--sig-live)" }} /> : null}
         {state === "error" ? <Icon name="error" size="xs" style={{ color: "var(--st-err)" }} /> : null}
         {disabled ? <Icon name="pause_circle" size="xs" style={{ color: "var(--text-faint)" }} /> : null}
-      </header>
+      </div>
       {badge ? <div style={{ padding: "0 12px 8px" }}>{badge}</div> : null}
       {children ? <div style={{ padding: "0 12px 10px", minWidth: 0 }}>{children}</div> : null}
       {rows > 0 ? (
@@ -85,10 +85,10 @@ export function PipelineNode({ title, subtitle, icon, nodeClass = "source", inpu
         </div>
       ) : null}
       {latencyMs != null || cpuPct != null ? (
-        <footer style={{ display: "flex", gap: 6, padding: "0 12px 10px" }}>
+        <div style={{ display: "flex", gap: 6, padding: "0 12px 10px" }}>
           {latencyMs != null ? chip(latencyMs + " ms", latencyMs > 200) : null}
           {cpuPct != null ? chip("CPU " + cpuPct + "%", cpuPct > 75) : null}
-        </footer>
+        </div>
       ) : null}
     </div>
   );
