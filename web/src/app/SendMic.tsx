@@ -10,7 +10,8 @@ const savePin = (p: string) => { try { sessionStorage.setItem(PIN_KEY, p); } cat
 
 const LABEL: Record<SendState, string> = { idle: "Off", connecting: "Connecting", "on-air": "On air", error: "Stopped", stopped: "Off" };
 
-export function SendMic({ live, onClose }: { live: boolean; onClose: () => void }) {
+/** Sender state shared by the Studio dialog and the phone page (/send). */
+export function useMicSender() {
   const [pin, setPin] = useState(readPin);
   const [state, setState] = useState<SendState>("idle");
   const [detail, setDetail] = useState<string | undefined>();
@@ -31,6 +32,13 @@ export function SendMic({ live, onClose }: { live: boolean; onClose: () => void 
     }, pin.trim(), { onState: (s, d) => { setState(s); setDetail(d); } });
   };
   const stop = () => { stopRef.current?.(); stopRef.current = null; };
+  return { pin, setPin, state, detail, supported, busy, start, stop };
+}
+
+export const STATE_LABEL = LABEL;
+
+export function SendMic({ live, onClose }: { live: boolean; onClose: () => void }) {
+  const { pin, setPin, state, detail, supported, busy, start, stop } = useMicSender();
   const close = () => { stop(); onClose(); };
 
   const why = !live ? "Connect to a GadgetCast Pi to send audio; the offline demo has no device."
@@ -55,6 +63,7 @@ export function SendMic({ live, onClose }: { live: boolean; onClose: () => void 
           {why ?? detail ?? (state === "on-air" ? "The host is hearing this microphone." : state === "connecting" ? "Pairing and connecting…" : "")}
         </span>
       </div>
+      <span style={{ font: "var(--type-meta)", color: "var(--text-faint)" }}>On a phone, open <b>{window.location.host}/send</b> for a one-button version.</span>
       {state === "error" ? <span style={{ display: "flex", gap: "var(--sp-3)", alignItems: "center", font: "var(--type-meta)", color: "var(--text-faint)" }}><Icon name="info" size="sm" />Check the PIN, then start again.</span> : null}
     </Modal>
   );

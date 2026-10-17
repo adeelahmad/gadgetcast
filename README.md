@@ -57,8 +57,8 @@ In production HTTPS is mandatory and the certificate, bind address and PIN sourc
 > Audio works end to end in software: click the microphone button in Studio, enter the PIN, and the Pi plays your browser's mic into the USB microphone. It has not yet been confirmed on real hardware, and video is still being built (see [Status](#status)).
 
 1. Plug the Pi's USB-C port (Zero 2 W: the inner micro-USB) into the host computer.
-2. On any device on the same network, open `https://gadgetcast.local` and pair with the PIN.
-3. Pick a pipeline (for example **Browser mic → USB mic**), grant mic, camera or screen-share permission, and press **Go on air**.
+2. On your phone (same network), open `https://gadgetcast.local/send`, enter the PIN and tap **Start sending**. On a laptop, the microphone button in Studio at `https://gadgetcast.local` does the same.
+3. The host now hears that microphone. Studio shows ON AIR while it is live.
 4. Select "GadgetCast" as the camera or microphone in Zoom, Teams, OBS or your browser on the host.
 
 ## How it works
