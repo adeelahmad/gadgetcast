@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/adeelahmad/gadgetcast/internal/config"
+	"github.com/adeelahmad/gadgetcast/internal/gadget"
 	"github.com/adeelahmad/gadgetcast/internal/server"
 	"github.com/adeelahmad/gadgetcast/web"
 )
@@ -37,6 +38,9 @@ func main() {
 }
 
 func run() error {
+	if len(os.Args) > 1 && os.Args[1] == "gadget" {
+		return runGadget(os.Args[2:])
+	}
 	var (
 		configPath = flag.String("config", "", "path to the JSON config file (required unless -dev)")
 		addrFlag   = flag.String("addr", "", "listen address override (default :8443, or "+defaultDevAddr+" with -dev)")
@@ -219,4 +223,46 @@ func isLoopback(addr string) bool {
 	}
 	ip := net.ParseIP(host)
 	return ip != nil && ip.IsLoopback()
+}
+
+// runGadget handles "gadgetcast gadget up|down": it creates or removes the
+// configfs USB composite device (webcam + mic + speaker). The boot unit
+// gadgetcast-gadget.service runs it before the server starts.
+func runGadget(args []string) error {
+	fl := flag.NewFlagSet("gadget", flag.ContinueOnError)
+	root := fl.String("configfs", gadget.DefaultConfigFS, "configfs usb_gadget directory")
+	udcDir := fl.String("udc-dir", gadget.DefaultUDCDir, "directory listing USB device controllers")
+	noVideo := fl.Bool("no-video", false, "omit the UVC webcam function")
+	noAudio := fl.Bool("no-audio", false, "omit the UAC2 mic/speaker function")
+	usage := errors.New("usage: gadgetcast gadget up|down [flags]")
+	if len(args) == 0 {
+		return usage
+	}
+	cmd := args[0]
+	if err := fl.Parse(args[1:]); err != nil {
+		return err
+	}
+	spec := gadget.DefaultSpec()
+	spec.Video, spec.Audio = !*noVideo, !*noAudio
+	if b, err := os.ReadFile("/proc/device-tree/serial-number"); err == nil {
+		if sn := strings.Trim(string(b), "\x00\n "); sn != "" {
+			spec.Serial = sn
+		}
+	}
+	switch cmd {
+	case "up":
+		udc, err := gadget.FindUDC(*udcDir)
+		if err != nil {
+			return err
+		}
+		if err := gadget.Up(gadget.OS{}, *root, spec, udc); err != nil {
+			return err
+		}
+		fmt.Printf("USB gadget bound to %s (video=%t audio=%t)\n", udc, spec.Video, spec.Audio)
+		return nil
+	case "down":
+		return gadget.Down(gadget.OS{}, *root, spec)
+	default:
+		return usage
+	}
 }

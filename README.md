@@ -83,7 +83,7 @@ Video arrives as H.264, is decoded (in hardware on a Pi 4) and re-encoded to MJP
 
 ## Status
 
-Early and moving fast. The Go core (signaling, pairing, session hub, on-air switcher, audio jitter buffer and clock-drift control) is built test-first with high coverage. The Pi server and GadgetCast Studio UI, the one-line installer and the flashable image are landing now. The end-to-end USB media path is the next milestone; see the [roadmap](docs/design.md#7-mvp-roadmap).
+Early and moving fast. The Go core (signaling, pairing, session hub, on-air switcher, audio jitter buffer and clock-drift control) is built test-first with high coverage. The Pi server and GadgetCast Studio UI, the one-line installer and the flashable image are landing now. On a Pi, a boot service now creates the USB composite device (MJPEG webcam at 720p/1080p, 48 kHz stereo mic and speaker) so the host enumerates GadgetCast as soon as it is plugged in; this is unit-tested against a model of configfs and still awaits a hardware report. The end-to-end USB media path is the next milestone; see the [roadmap](docs/design.md#7-mvp-roadmap).
 
 | Hardware | Target |
 |---|---|
