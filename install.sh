@@ -362,8 +362,10 @@ write_units() {
 [Unit]
 Description=gadgetcast WebRTC to USB webcam/audio bridge
 Wants=network-online.target
-# cloud-init applies Raspberry Pi Imager's hostname, user and Wi-Fi settings.
-After=network-online.target cloud-init.target
+# cloud-init applies Raspberry Pi Imager's hostname, user and Wi-Fi settings in
+# these stages. Not cloud-init.target: it is ordered after multi-user.target, so
+# waiting for it is an ordering cycle and systemd skips gadgetcast on first boot.
+After=network-online.target cloud-init.service cloud-config.service
 
 [Service]
 EnvironmentFile=-$ENV_FILE
