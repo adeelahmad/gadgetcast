@@ -335,6 +335,17 @@ ensure_mdns() {
 	DEBIAN_FRONTEND=noninteractive apt-get install -y -qq avahi-daemon >/dev/null 2>&1 || true
 }
 
+# GStreamer decodes the on-air browser's Opus audio and plays it into the
+# USB microphone (internal/media).
+ensure_media() {
+	have gst-launch-1.0 && return 0
+	have apt-get || return 0
+	say "installing GStreamer for USB audio"
+	DEBIAN_FRONTEND=noninteractive apt-get install -y -qq gstreamer1.0-tools gstreamer1.0-plugins-base \
+		gstreamer1.0-plugins-good gstreamer1.0-alsa >/dev/null 2>&1 ||
+		say "could not install GStreamer; USB audio stays off until it is installed"
+}
+
 write_units() {
 	mkdir -p "$UNIT_DIR"
 	cat >"$UNIT_DIR/gadgetcast.service" <<EOF
@@ -492,7 +503,10 @@ main() {
 		say "enabling USB gadget mode"
 		needs_reboot="$(configure_pi)"
 	fi
-	if [ -z "${GADGETCAST_BINARY:-}" ]; then ensure_mdns; fi
+	if [ -z "${GADGETCAST_BINARY:-}" ]; then
+		ensure_mdns
+		if is_pi; then ensure_media; fi
+	fi
 
 	write_units
 	enable_units

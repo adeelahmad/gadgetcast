@@ -4,6 +4,7 @@ import type { Backend } from "../api/backend";
 import { AI_MODELS, VIDEO_FORMATS } from "./Inspector";
 import { cfgNum, cfgStr, viewOf } from "./nodes";
 import { QuickCapture } from "./QuickCapture";
+import { SendMic } from "./SendMic";
 import { SHORTCUTS } from "./Sidebar";
 import type { Studio } from "./store";
 
@@ -143,6 +144,7 @@ export function Modals({ studio, backend, reason }: { studio: Studio; backend: B
     );
   }
   if (s.modal === "save") return <SaveModal studio={studio} />;
+  if (s.modal === "sendmic") return <SendMic live={backend.mode === "live"} onClose={close} />;
   if (s.modal === "capture") return <QuickCapture mode={s.captureMode} onClose={close} onDone={(msg) => act.toast(msg, "download", "ok")} />;
   if (s.modal === "delete" && s.deleteTarget) {
     const p = s.pipelines.find(x => x.id === s.deleteTarget);

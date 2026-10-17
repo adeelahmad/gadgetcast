@@ -53,7 +53,7 @@ type testEnv struct {
 	dataDir string
 }
 
-func newEnv(t *testing.T, static fstest.MapFS) *testEnv {
+func newEnv(t *testing.T, static fstest.MapFS, mut ...func(*Options)) *testEnv {
 	t.Helper()
 	proc, sys, dev := fakeHost(t)
 	data := t.TempDir()
@@ -68,6 +68,9 @@ func newEnv(t *testing.T, static fstest.MapFS) *testEnv {
 	}
 	if static != nil {
 		opts.Static = static
+	}
+	for _, m := range mut {
+		m(&opts)
 	}
 	srv, err := New(opts)
 	if err != nil {

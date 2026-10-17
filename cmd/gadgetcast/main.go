@@ -21,6 +21,7 @@ import (
 
 	"github.com/adeelahmad/gadgetcast/internal/config"
 	"github.com/adeelahmad/gadgetcast/internal/gadget"
+	"github.com/adeelahmad/gadgetcast/internal/media"
 	"github.com/adeelahmad/gadgetcast/internal/server"
 	"github.com/adeelahmad/gadgetcast/web"
 )
@@ -47,6 +48,7 @@ func run() error {
 		dataDir    = flag.String("data", "data", "data directory (pipelines are stored under <data>/pipelines)")
 		dev        = flag.Bool("dev", false, "development mode: plain HTTP on localhost, config optional")
 		showVer    = flag.Bool("version", false, "print the version and exit")
+		audioDev   = flag.String("audio-device", media.DefaultALSADevice, "ALSA device the on-air client's audio is played to (the USB mic)")
 	)
 	flag.Parse()
 	if *showVer {
@@ -87,12 +89,27 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	sink, err := media.NewGstSink(*audioDev, logger)
+	if err != nil {
+		return err
+	}
+	go sink.Run(ctx)
+	bridge, err := media.New(sink, media.Options{})
+	if err != nil {
+		return err
+	}
+	defer bridge.Close()
+
 	opts := server.Options{
 		DataDir:         *dataDir,
 		PIN:             pin,
 		PINAttemptLimit: cfg.PIN.AttemptLimit,
 		Static:          static,
 		Logger:          logger,
+		Media:           bridge,
 	}
 	if *dev {
 		opts.OriginPatterns = []string{"localhost:*", "127.0.0.1:*"}
@@ -109,9 +126,6 @@ func run() error {
 		ErrorLog:          logger,
 	}
 	hs.RegisterOnShutdown(srv.Close)
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	errc := make(chan error, 1)
 	go func() {

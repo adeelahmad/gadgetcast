@@ -55,3 +55,8 @@ type Client = { id: string; onAir: boolean };
 - `GET /ws` — WebRTC signaling. Frames are the `internal/signaling` `{type,payload}` envelope, routed
   through `session.Hub`. A PIN is submitted with the extra client→server frame
   `{"type":"submit-pin","payload":{"pin":"1234"}}` (handled by the transport, fed to the hub as `SubmitPIN`).
+- Media to the Pi itself: a joined, paired client sends `{"type":"media-offer","payload":{"sdp":"…"}}`
+  and gets `{"type":"media-answer","payload":{"sdp":"…"}}`. ICE is not trickled: the offer must carry all
+  of the browser's candidates (wait for gathering to complete) and the answer carries all of the Pi's.
+  The Pi accepts Opus audio; only the on-air client's audio (`switch-source`) is played into the USB mic.
+  Unpaired or unjoined clients get an `error` frame.

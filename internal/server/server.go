@@ -47,6 +47,16 @@ type Options struct {
 	OriginPatterns []string
 	// Logger receives server log lines; nil discards them.
 	Logger *log.Logger
+	// Media terminates clients' WebRTC sessions and plays the on-air
+	// client's audio to the USB host. Nil answers media offers with an error.
+	Media MediaBridge
+}
+
+// MediaBridge is the WebRTC side of the server (internal/media.Bridge).
+type MediaBridge interface {
+	Offer(id core.ClientID, sdp string) (answer string, err error)
+	SetOnAir(id core.ClientID, live bool)
+	Drop(id core.ClientID)
 }
 
 // Server holds all server state. Create with New; serve Handler().
@@ -64,6 +74,7 @@ type Server struct {
 	// hubMu guards the session hub, its switcher, and the conn routing table.
 	hubMu sync.Mutex
 	hub   *session.Hub
+	pm    *pairing.Manager
 	sw    *switcher.Switcher
 	conns map[core.ClientID]*sigConn
 	order []core.ClientID
@@ -109,6 +120,7 @@ func New(opts Options) (*Server, error) {
 		events:  newBroker(),
 		done:    make(chan struct{}),
 		hub:     session.New(pm, sw),
+		pm:      pm,
 		sw:      sw,
 		conns:   make(map[core.ClientID]*sigConn),
 	}
