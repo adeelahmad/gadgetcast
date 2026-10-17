@@ -75,6 +75,7 @@ type Server struct {
 	hubMu sync.Mutex
 	hub   *session.Hub
 	pm    *pairing.Manager
+	pins  *pinLimiter
 	sw    *switcher.Switcher
 	conns map[core.ClientID]*sigConn
 	order []core.ClientID
@@ -121,6 +122,7 @@ func New(opts Options) (*Server, error) {
 		done:    make(chan struct{}),
 		hub:     session.New(pm, sw),
 		pm:      pm,
+		pins:    newPinLimiter(nil),
 		sw:      sw,
 		conns:   make(map[core.ClientID]*sigConn),
 	}

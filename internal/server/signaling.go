@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -31,6 +33,7 @@ const (
 // read and written only under Server.hubMu.
 type sigConn struct {
 	id     core.ClientID
+	addr   string // remote host, for PIN rate limiting
 	send   chan []byte
 	cancel context.CancelFunc
 	once   sync.Once
@@ -56,7 +59,7 @@ func (s *Server) handleSignaling(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithCancel(r.Context())
 	defer cancel()
-	sc := &sigConn{send: make(chan []byte, sendQueueDepth), cancel: cancel}
+	sc := &sigConn{send: make(chan []byte, sendQueueDepth), cancel: cancel, addr: remoteHost(r.RemoteAddr)}
 
 	writerDone := make(chan struct{})
 	go func() {
@@ -152,7 +155,17 @@ func (s *Server) handleFrame(sc *sigConn, data []byte) {
 			s.replyError(sc, "submit-pin: payload must be {\"pin\":\"…\"}")
 			break
 		}
-		s.deliverLocked(s.hub.Process(session.SubmitPIN{Client: sc.id, PIN: p.PIN}))
+		if wait := s.pins.wait(sc.addr); wait > 0 {
+			s.replyError(sc, fmt.Sprintf("too many wrong PINs from this device; try again in %d s", int(wait.Seconds()+0.999)))
+			break
+		}
+		effects := s.hub.Process(session.SubmitPIN{Client: sc.id, PIN: p.PIN})
+		if s.pm.IsPaired(sc.id) {
+			s.pins.success(sc.addr)
+		} else {
+			s.pins.fail(sc.addr)
+		}
+		s.deliverLocked(effects)
 
 	case string(signaling.TypeJoin):
 		logMsg = s.joinLocked(sc, data)
@@ -284,4 +297,12 @@ func (s *Server) syncOnAirLocked() {
 	}
 	id, live := s.sw.OnAir()
 	s.opts.Media.SetOnAir(id, live)
+}
+
+// remoteHost strips the port from an http.Request.RemoteAddr.
+func remoteHost(addr string) string {
+	if h, _, err := net.SplitHostPort(addr); err == nil {
+		return h
+	}
+	return addr
 }
