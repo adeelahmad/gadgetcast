@@ -44,7 +44,7 @@ export function Sidebar({ studio, backend, floating = false }: { studio: Studio;
       <>
         {head("Node palette", <Badge tone="neutral">{s.groups.reduce((n, g) => n + g.items.length, 0)}</Badge>)}
         <div style={{ padding: "var(--sp-4) var(--sp-5)" }}><Input icon="search" size="sm" placeholder="Filter nodes" value={q} onChange={e => setQ(e.target.value)} aria-label="Filter nodes" /></div>
-        <div className="gc-scroll" style={{ flex: 1, overflow: "auto", padding: "0 var(--sp-4) var(--sp-6)" }}>
+        <div className="gc-scroll" tabIndex={0} role="region" aria-label="Node palette" style={{ flex: 1, overflow: "auto", padding: "0 var(--sp-4) var(--sp-6)" }}>
           {s.groups.map(g => {
             const items = g.items.filter(i => !ql || (i.title + " " + (i.subtitle ?? "") + " " + g.group).toLowerCase().includes(ql));
             if (!items.length) return null;
@@ -128,7 +128,7 @@ export function Sidebar({ studio, backend, floating = false }: { studio: Studio;
     body = (
       <>
         {head("Shortcuts")}
-        <div className="gc-scroll gc-stack" style={{ flex: 1, overflow: "auto", padding: "var(--sp-5)", display: "flex", flexDirection: "column", gap: "var(--sp-4)" }}>
+        <div className="gc-scroll gc-stack" tabIndex={0} role="region" aria-label="Keyboard shortcuts" style={{ flex: 1, overflow: "auto", padding: "var(--sp-5)", display: "flex", flexDirection: "column", gap: "var(--sp-4)" }}>
           {SHORTCUTS.map(([k, label]) => (
             <div key={k} style={{ display: "flex", alignItems: "center", gap: "var(--sp-4)" }}>
               <kbd style={{ minWidth: 64, textAlign: "center" }}>{k}</kbd>

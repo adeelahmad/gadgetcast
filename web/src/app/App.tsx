@@ -38,7 +38,7 @@ export function App({ backend, reason }: { backend: Backend; reason?: string }) 
   return (
     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", background: "var(--surface-app)", overflow: "hidden" }}>
       <Header studio={studio} backend={backend} reason={reason} />
-      <div style={{ height: "var(--h-subbar)", flex: "0 0 auto", display: "flex", alignItems: "center", gap: "var(--sp-6)", padding: "0 var(--sp-6)", background: "var(--surface-panel)", borderBottom: "1px solid var(--line-border)" }}>
+      <nav aria-label="Views" style={{ height: "var(--h-subbar)", flex: "0 0 auto", display: "flex", alignItems: "center", gap: "var(--sp-6)", padding: "0 var(--sp-6)", background: "var(--surface-panel)", borderBottom: "1px solid var(--line-border)" }}>
         <Tabs<View> size="sm" value={s.view} onChange={act.setView} style={{ border: 0 }}
           items={[
             { value: "canvas", label: "Patch canvas", icon: "account_tree" },
@@ -50,8 +50,8 @@ export function App({ backend, reason }: { backend: Backend; reason?: string }) 
         {backend.mode === "demo" ? <Badge tone="warn" dot>Simulated media</Badge> : <Badge tone={s.events === "open" ? "ok" : "warn"} dot>{s.events === "open" ? "Events live" : "Events " + s.events}</Badge>}
         <Badge tone="neutral" icon="groups">{s.status?.clients ?? 0} clients</Badge>
         {s.dirty ? <Badge tone="warn" icon="edit">Unsaved changes</Badge> : s.doc.id ? <Badge tone="ok" icon="cloud_done">Saved</Badge> : <Badge tone="neutral" icon="cloud_off">Not saved</Badge>}
-      </div>
-      <div style={{ flex: 1, display: "flex", minHeight: 0, position: "relative" }}>
+      </nav>
+      <main style={{ flex: 1, display: "flex", minHeight: 0, position: "relative" }}>
         {s.view === "canvas" ? (
           <>
             <Canvas studio={studio} />
@@ -77,7 +77,7 @@ export function App({ backend, reason }: { backend: Backend; reason?: string }) 
             </div>
           </>
         ) : null}
-      </div>
+      </main>
       <StatusBar studio={studio} backend={backend} />
       {s.palette ? <Palette studio={studio} /> : null}
       <Modals studio={studio} backend={backend} reason={reason} />

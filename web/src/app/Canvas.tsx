@@ -430,7 +430,7 @@ function CanvasInner({ studio }: { studio: Studio }) {
               <button type="button" role="menuitem" key={i} className="gc-menuitem" onClick={() => { fn(); setMenu(null); }}
                 style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", height: 32, padding: "0 8px", background: "transparent", border: 0, borderRadius: "var(--r-sm)", cursor: "pointer", font: "var(--type-ui)", color: danger ? "var(--st-err)" : "var(--text-body)", textAlign: "left" }}>
                 <Icon name={icon} size="sm" style={{ color: danger ? "var(--st-err)" : "var(--text-faint)" }} /><span style={{ flex: 1 }}>{label}</span>
-                {key ? <span style={{ font: "var(--type-meta)", color: "var(--text-disabled)" }}>{key}</span> : null}
+                {key ? <span style={{ font: "var(--type-meta)", color: "var(--text-faint)" }}>{key}</span> : null}
               </button>
             );
           })}

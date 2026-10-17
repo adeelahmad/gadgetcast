@@ -16,7 +16,7 @@ function Monitor({ label, tone, live, badge, height = 180, detail }: { label: st
       </div>
       <div style={{ position: "relative", height, borderRadius: "var(--r-md)", overflow: "hidden", border: "1px solid " + (tone === "var(--sig-live)" && live ? "var(--sig-live-dim)" : "var(--line-border)"), background: "var(--surface-input)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         {live ? <div className="gc-pulse" style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, " + tone + " 8%, transparent)" }} /> : null}
-        <span style={{ font: "var(--type-meta)", color: "var(--text-disabled)", textAlign: "center", zIndex: 1 }}>
+        <span style={{ font: "var(--type-meta)", color: "var(--text-faint)", textAlign: "center", zIndex: 1 }}>
           {live ? "PIPELINE RUNNING" : "NO SIGNAL"}<br /><span style={{ fontSize: "var(--fs-tick)" }}>{detail}</span>
         </span>
       </div>

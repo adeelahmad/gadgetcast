@@ -11,22 +11,23 @@
   --ink-100:#ccd6df;--ink-050:#e6ecf1;--ink-025:#f2f5f8;--ink-000:#f7f9fb;
 
   /* Signal palette — one hue per class of media, used on wires, ports, meters.
-     Light-theme values: darkened enough to hold 4.5:1 on white. */
-  --sig-video:#0aa2cc;--sig-video-dim:#8fd9ec;--sig-video-glow:#0aa2cc1f;
-  --sig-audio:#c1810b;--sig-audio-dim:#f0d49a;--sig-audio-glow:#c1810b1f;
+     Light-theme values: dark enough to hold 4.5:1 as small text on their own 8-12% tints
+     (checked with axe-core). */
+  --sig-video:#07728d;--sig-video-dim:#8fd9ec;--sig-video-glow:#07728d1f;
+  --sig-audio:#875a05;--sig-audio-dim:#f0d49a;--sig-audio-glow:#875a051f;
   --sig-ai:#7c4fe0;--sig-ai-dim:#cdbcf5;--sig-ai-glow:#7c4fe01f;
   --sig-data:#2f5fd8;--sig-data-dim:#b3c5f2;--sig-data-glow:#2f5fd81f;
-  --sig-live:#e02430;--sig-live-dim:#f5b3b7;--sig-live-glow:#e0243026;
+  --sig-live:#c41c28;--sig-live-dim:#f5b3b7;--sig-live-glow:#e0243026;
   --sig-bt:#2b6ede;--sig-bt-dim:#b0c8f4;--sig-bt-glow:#2b6ede1f;
 
   /* Status */
-  --st-ok:#12855f;--st-ok-dim:#a6e0cb;
-  --st-warn:#b47407;--st-warn-dim:#f0d29c;
-  --st-err:#d13341;--st-err-dim:#f4b6bb;
+  --st-ok:#0f7656;--st-ok-dim:#a6e0cb;
+  --st-warn:#8f5a05;--st-warn-dim:#f0d29c;
+  --st-err:#bf2a37;--st-err-dim:#f4b6bb;
   --st-idle:#93a2b1;
 
   /* Brand */
-  --brand:#0e9cc4;--brand-press:#0b7d9e;--brand-ink:#ffffff;--brand-deep:#e2f4fa;
+  --brand:#08708f;--brand-press:#065a73;--brand-ink:#ffffff;--brand-deep:#e2f4fa;
 
   /* ── Semantic: surfaces ── */
   --surface-canvas:#eef2f6;      /* patch-bay canvas, app backdrop */
@@ -44,10 +45,10 @@
   --text-primary:var(--ink-900);
   --text-body:var(--ink-800);
   --text-muted:var(--ink-400);
-  --text-faint:var(--ink-300);
+  --text-faint:#5f6f7f;          /* ink-300 is too light for small text (WCAG 4.5:1) */
   --text-disabled:var(--ink-200);
   --text-on-brand:var(--brand-ink);
-  --text-link:#0b7d9e;
+  --text-link:#08708f;
   --text-link-hover:#075f79;
 
   /* ── Semantic: lines — the whole hierarchy, since the UI is flat ── */
@@ -65,11 +66,11 @@
   --sig-audio:#ffc247;--sig-audio-dim:#8a6415;--sig-audio-glow:#ffc2472e;
   --sig-ai:#a97bff;--sig-ai-dim:#5b3f96;--sig-ai-glow:#a97bff2e;
   --sig-data:#5b8cff;--sig-data-dim:#31488c;--sig-data-glow:#5b8cff2e;
-  --sig-live:#ff3b47;--sig-live-dim:#8d2129;--sig-live-glow:#ff3b4733;
+  --sig-live:#ff5a64;--sig-live-dim:#8d2129;--sig-live-glow:#ff3b4733;
   --sig-bt:#4c8dff;--sig-bt-dim:#2a4c8c;--sig-bt-glow:#4c8dff2e;
   --st-ok:#34d399;--st-ok-dim:#1a6b52;
   --st-warn:#f59e0b;--st-warn-dim:#87570a;
-  --st-err:#f4525f;--st-err-dim:#872b33;
+  --st-err:#ff6b74;--st-err-dim:#872b33;
   --st-idle:#6d7d8d;
   --brand:#22c8f5;--brand-press:#17a9d1;--brand-ink:#04212b;--brand-deep:#071b24;
   --surface-canvas:var(--ink-1000);
@@ -85,7 +86,7 @@
   --text-primary:var(--ink-050);
   --text-body:var(--ink-100);
   --text-muted:var(--ink-200);
-  --text-faint:var(--ink-300);
+  --text-faint:#8292a2;          /* ink-300 fails 4.5:1 on raised dark surfaces */
   --text-disabled:var(--ink-400);
   --text-link:var(--brand);
   --text-link-hover:#7ee0ff;
