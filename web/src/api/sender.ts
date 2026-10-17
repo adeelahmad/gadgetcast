@@ -1,4 +1,5 @@
-/* Sends this browser's microphone to the Pi, which plays it into the USB mic the host sees.
+/* Sends this browser's microphone (and optionally camera or screen) to the Pi, which plays them into the
+   USB mic and webcam the host sees.
    Flow over GET /ws (docs/api.md): join → submit-pin → media-offer (non-trickle: the offer carries every
    ICE candidate) → media-answer → switch-source to ourselves → on-air-state. Browser APIs are injected so
    the flow is unit-tested without a DOM. */
@@ -28,7 +29,8 @@ export interface SenderPeer {
 export interface SenderDeps {
   socket(url: string): SenderSocket;
   peer(): SenderPeer;
-  getMic(): Promise<MediaStream>;
+  /** Opens the media to send: audio, and video when sending a camera or screen. */
+  getMedia(): Promise<MediaStream>;
   url: string;
   /** Max wait for ICE gathering before sending what we have. */
   gatherTimeoutMs?: number;
@@ -75,18 +77,20 @@ export function startMicSender(deps: SenderDeps, pin: string, ev: SenderEvents, 
   ev.onState("connecting");
   void (async () => {
     try {
-      stream = await deps.getMic();
+      stream = await deps.getMedia();
     } catch (e) {
       const name = e instanceof Error ? e.name : "";
-      fail(name === "NotAllowedError" ? "Microphone permission was denied." : "Could not open the microphone: " + String(e instanceof Error ? e.message : e));
+      fail(name === "NotAllowedError" ? "Permission to use the microphone, camera or screen was denied." : "Could not open the media: " + String(e instanceof Error ? e.message : e));
       return;
     }
     if (stopped) { cleanup(); return; }
-    const track = stream.getAudioTracks()[0];
-    if (!track) { fail("No microphone track."); return; }
+    const tracks = stream.getTracks();
+    if (!tracks.length) { fail("Nothing to send."); return; }
+    // A screen share that the user ends from the browser's own bar stops sending too.
+    for (const t of tracks) t.addEventListener?.("ended", () => fail("The shared screen or camera was stopped."));
 
     pc = deps.peer();
-    pc.addTransceiver(track, { direction: "sendonly", streams: [stream] });
+    for (const t of tracks) pc.addTransceiver(t, { direction: "sendonly", streams: [stream] });
     try {
       await pc.setLocalDescription(await pc.createOffer());
       await waitForGathering(pc, deps.gatherTimeoutMs ?? 3000);
