@@ -8,7 +8,7 @@
 <p align="center">
   <a href="https://github.com/adeelahmad/gadgetcast/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/adeelahmad/gadgetcast/actions/workflows/ci.yml/badge.svg"></a>
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-0aa2cc"></a>
-  <img alt="Go 1.22" src="https://img.shields.io/badge/go-1.22-00add8">
+  <img alt="Go 1.25" src="https://img.shields.io/badge/go-1.25-00add8">
   <img alt="Raspberry Pi 4 / 5 / Zero 2 W" src="https://img.shields.io/badge/Raspberry%20Pi-4%20%C2%B7%205%20%C2%B7%20Zero%202%20W-c51a4a">
 </p>
 
