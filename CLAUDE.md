@@ -33,6 +33,7 @@ All code is under `internal/`, one abstraction per package:
 - `switcher` — connected-client set plus the single on-air selection. Depends on pairing only through the `PairingOracle` interface (`pairing.Manager` satisfies it directly).
 - `session` — the integration surface: `Hub.Process(Event) []Effect` is a synchronous, side-effect-free event processor over pairing + switcher. Events are `Inbound` (raw frame bytes), `SubmitPIN`, `Disconnect`; effects are addressed `signaling.Message`s. SDP/ICE are relayed to every other roster client; a successful switch-source or the on-air client disconnecting broadcasts on-air state. Future transport (WS server, WebRTC) is meant to sit outside the hub, feed it events, and deliver its effects.
 - `jitter` — sequence-number reordering buffer with underrun/overrun counters (stdlib only).
+- `gadget` — configfs USB composite gadget (UVC MJPEG webcam + UAC2 mic/speaker) as an ordered `Plan` of filesystem ops; `Up`/`Down` run it (teardown is the reverse) through an `Executor`, so it is tested without a kernel. `gadgetcast gadget up|down` is run by `gadgetcast-gadget.service`.
 - `drift` — proportional control law mapping buffer fill fraction to a clamped resample ratio, for audio clock-drift compensation (stdlib `math` only).
 
 Dependency direction: `session` → {`core`, `signaling`, `pairing`, `switcher`}; `jitter` and `drift` import no internal packages. Avoid new cross-package coupling.

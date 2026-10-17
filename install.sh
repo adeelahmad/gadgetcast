@@ -83,9 +83,10 @@ systemd_running() { [ -d /run/systemd/system ]; }
 
 uninstall() {
 	if have systemctl; then
-		systemctl disable --now gadgetcast.service gadgetcast-update.timer gadgetcast-boot-config.service 2>/dev/null || true
+		systemctl disable --now gadgetcast.service gadgetcast-update.timer gadgetcast-boot-config.service gadgetcast-gadget.service 2>/dev/null || true
 	fi
 	rm -f "$BIN" "$UPDATER" "$UNIT_DIR/gadgetcast.service" "$UNIT_DIR/gadgetcast-boot-config.service" \
+		"$UNIT_DIR/gadgetcast-gadget.service" \
 		"$UNIT_DIR/gadgetcast-update.service" "$UNIT_DIR/gadgetcast-update.timer" \
 		/etc/modules-load.d/gadgetcast.conf
 	rm -rf "$SHARE"
@@ -373,6 +374,25 @@ ExecStart=$UPDATER --boot-config
 WantedBy=multi-user.target
 EOF
 
+	# Creates the USB webcam + mic + speaker the host sees (configfs gadget).
+	cat >"$UNIT_DIR/gadgetcast-gadget.service" <<EOF
+[Unit]
+Description=gadgetcast USB gadget (webcam, microphone, speaker)
+DefaultDependencies=no
+Wants=sys-kernel-config.mount
+After=sys-kernel-config.mount systemd-modules-load.service
+Before=gadgetcast.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=$BIN gadget up
+ExecStop=$BIN gadget down
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
 	if [ "${GADGETCAST_NO_AUTOUPDATE:-0}" = 1 ]; then
 		rm -f "$UNIT_DIR/gadgetcast-update.service" "$UNIT_DIR/gadgetcast-update.timer"
 		return
@@ -406,6 +426,7 @@ enable_units() {
 	have systemctl || return 0
 	units="gadgetcast.service gadgetcast-boot-config.service"
 	[ -f "$UNIT_DIR/gadgetcast-update.timer" ] && units="$units gadgetcast-update.timer"
+	is_pi && units="$units gadgetcast-gadget.service"
 	if systemd_running; then
 		systemctl daemon-reload
 		# shellcheck disable=SC2086
