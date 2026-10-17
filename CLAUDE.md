@@ -20,7 +20,7 @@ go test ./internal/jitter/ -run TestName -v  # one test
 go test -cover ./...                         # coverage (last reported ~93.5%)
 ```
 
-`go.mod` declares `go 1.22.2`. These four (`gofmt`, `vet`, `build`, `test`) are the gate matrix every story must pass.
+`go.mod` declares `go 1.25.0` (x/crypto and Pion security updates need it; run with `GOTOOLCHAIN=auto` if your local Go is older). These four (`gofmt`, `vet`, `build`, `test`) are the gate matrix every story must pass.
 
 ## Architecture
 
