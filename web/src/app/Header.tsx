@@ -3,6 +3,7 @@ import logoLight from "../ds/assets/logo.svg";
 import { Badge, Button, Icon, IconButton, MetricPill, OnAirIndicator, Tooltip } from "../ds";
 import type { Backend } from "../api/backend";
 import type { Studio } from "./store";
+import { tallyOf } from "./tally";
 
 export function fmtUptime(s: number): string {
   const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
@@ -15,7 +16,7 @@ export function Header({ studio, backend, reason }: { studio: Studio; backend: B
   const live = running != null && running === s.doc.id;
   const runningName = running ? s.pipelines.find(p => p.id === running)?.name ?? running : undefined;
   const m = s.status?.metrics;
-  const tally = running ? (s.status?.onAir ? "live" : "armed") : "off";
+  const tally = tallyOf(s.status);
   return (
     <header style={{ height: "var(--h-header)", flex: "0 0 auto", display: "flex", alignItems: "center", gap: "var(--sp-5)", padding: "0 var(--sp-6)", background: "var(--surface-panel)", borderBottom: "1px solid var(--line-border)", zIndex: 20, minWidth: 0 }}>
       <img src={s.theme === "dark" ? logoDark : logoLight} alt="GadgetCast" style={{ height: 19, flex: "0 0 auto" }} />
@@ -56,7 +57,7 @@ export function Header({ studio, backend, reason }: { studio: Studio; backend: B
 
       <MetricPill icon="memory" label="cpu" value={m ? m.cpuPct.toFixed(0) : "—"} unit="%" tone={m && m.cpuPct > 80 ? "var(--st-warn)" : undefined} />
       <MetricPill icon="thermostat" label="soc" value={m && m.tempC != null ? m.tempC.toFixed(0) : "—"} unit="°C" tone={m && m.tempC != null && m.tempC > 70 ? "var(--st-warn)" : undefined} />
-      <OnAirIndicator state={tally} source={runningName} />
+      <OnAirIndicator state={tally} source={runningName ?? s.status?.onAir ?? undefined} />
       <Button variant={running ? "danger" : "live"} size="sm" icon={running ? "stop" : "fiber_manual_record"} onClick={running ? act.stop : act.goOnAir} disabled={s.busy} data-testid="go-on-air">
         {running ? "Stop" : "Go on air"}
       </Button>
