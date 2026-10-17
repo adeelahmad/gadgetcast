@@ -54,7 +54,7 @@ In production HTTPS is mandatory and the certificate, bind address and PIN sourc
 
 ## Quick start
 
-> The end-to-end USB media path is still being built (see [Status](#status)). Today you can run the server and Studio UI, pair clients and build pipelines.
+> Audio works end to end in software: click the microphone button in Studio, enter the PIN, and the Pi plays your browser's mic into the USB microphone. It has not yet been confirmed on real hardware, and video is still being built (see [Status](#status)).
 
 1. Plug the Pi's USB-C port (Zero 2 W: the inner micro-USB) into the host computer.
 2. On any device on the same network, open `https://gadgetcast.local` and pair with the PIN.

@@ -19,6 +19,14 @@ import (
 // it and feeds session.SubmitPIN to the hub.
 const typeSubmitPIN = "submit-pin"
 
+// typeMediaOffer / typeMediaAnswer carry a WebRTC session between a paired
+// client and the Pi itself (docs/api.md). Like submit-pin they are handled
+// by the transport, not the hub, which only relays between clients.
+const (
+	typeMediaOffer  = "media-offer"
+	typeMediaAnswer = "media-answer"
+)
+
 // sigConn is one /ws connection. id is zero until a join is accepted; it is
 // read and written only under Server.hubMu.
 type sigConn struct {
@@ -149,6 +157,25 @@ func (s *Server) handleFrame(sc *sigConn, data []byte) {
 	case string(signaling.TypeJoin):
 		logMsg = s.joinLocked(sc, data)
 
+	case typeMediaOffer:
+		id := sc.id
+		var p struct {
+			SDP string `json:"sdp"`
+		}
+		switch {
+		case id.IsZero():
+			s.replyError(sc, "join before sending media-offer")
+		case !s.pm.IsPaired(id):
+			s.replyError(sc, "pair with the PIN before sending media")
+		case s.opts.Media == nil:
+			s.replyError(sc, "media is not available on this server")
+		case json.Unmarshal(env.Payload, &p) != nil || p.SDP == "":
+			s.replyError(sc, "media-offer: payload must be {\"sdp\":\"…\"}")
+		default:
+			// ICE gathering can take a moment: answer off the hub lock.
+			go s.answerMedia(sc, id, p.SDP)
+		}
+
 	default:
 		if sc.id.IsZero() {
 			s.replyError(sc, "join before sending "+strings.TrimSpace(env.Type))
@@ -156,6 +183,7 @@ func (s *Server) handleFrame(sc *sigConn, data []byte) {
 		}
 		s.deliverLocked(s.hub.Process(session.Inbound{From: sc.id, Data: data}))
 	}
+	s.syncOnAirLocked()
 	s.hubMu.Unlock()
 
 	if logMsg != "" {
@@ -217,8 +245,43 @@ func (s *Server) disconnect(sc *sigConn) {
 	}
 	sc.id = core.ClientID{}
 	s.deliverLocked(effects)
+	s.syncOnAirLocked()
 	s.hubMu.Unlock()
+	if s.opts.Media != nil {
+		s.opts.Media.Drop(id)
+	}
 
 	s.logEvent("info", "session", "client "+id.String()+" left")
 	s.publishStatusIfChanged()
+}
+
+// answerMedia answers a client's media offer and sends the answer back.
+func (s *Server) answerMedia(sc *sigConn, id core.ClientID, offer string) {
+	answer, err := s.opts.Media.Offer(id, offer)
+	if err != nil {
+		s.replyError(sc, err.Error())
+		return
+	}
+	s.hubMu.Lock()
+	gone := s.conns[id] != sc
+	s.hubMu.Unlock()
+	if gone { // the client left while ICE was gathering
+		s.opts.Media.Drop(id)
+		return
+	}
+	b, err := json.Marshal(map[string]any{"type": typeMediaAnswer, "payload": map[string]string{"sdp": answer}})
+	if err == nil {
+		sc.enqueue(b)
+	}
+	s.logEvent("info", "session", "client "+id.String()+" connected media")
+}
+
+// syncOnAirLocked points the media bridge at the switcher's on-air client.
+// Caller holds hubMu.
+func (s *Server) syncOnAirLocked() {
+	if s.opts.Media == nil {
+		return
+	}
+	id, live := s.sw.OnAir()
+	s.opts.Media.SetOnAir(id, live)
 }

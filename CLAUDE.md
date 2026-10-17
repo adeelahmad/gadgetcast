@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 gadgetcast turns a Raspberry Pi into a USB composite gadget (UVC webcam + UAC2 mic/speaker) whose media comes from WebRTC sessions served by the Pi to browsers on the LAN. `docs/design.md` (formerly the README) is the design doc (architecture, latency budget, USB bandwidth/MJPEG rationale, audio drift, security baseline, phased roadmap); code comments cite its sections as "README §N" (e.g. "README §3.2").
 
-Current state: only the hardware-free, pure-logic core exists. There is no `main` package, no network server, no WebRTC, no USB/ALSA/V4L2 code yet. Everything is stdlib-only Go with **no third-party dependencies**; keep it that way unless a story explicitly introduces one.
+Current state: `cmd/gadgetcast` serves the REST/WebSocket API and the Studio UI (`web/`), creates the USB gadget (`gadgetcast gadget up`), and plays a paired browser's mic into the UAC2 gadget over WebRTC. Video is not built yet. Go dependencies are `coder/websocket` and Pion WebRTC (Pion approved by Adeel 2026-10-17); add no others without asking.
 
 ## Commands
 
@@ -34,6 +34,7 @@ All code is under `internal/`, one abstraction per package:
 - `session` — the integration surface: `Hub.Process(Event) []Effect` is a synchronous, side-effect-free event processor over pairing + switcher. Events are `Inbound` (raw frame bytes), `SubmitPIN`, `Disconnect`; effects are addressed `signaling.Message`s. SDP/ICE are relayed to every other roster client; a successful switch-source or the on-air client disconnecting broadcasts on-air state. Future transport (WS server, WebRTC) is meant to sit outside the hub, feed it events, and deliver its effects.
 - `jitter` — sequence-number reordering buffer with underrun/overrun counters (stdlib only).
 - `gadget` — configfs USB composite gadget (UVC MJPEG webcam + UAC2 mic/speaker) as an ordered `Plan` of filesystem ops; `Up`/`Down` run it (teardown is the reverse) through an `Executor`, so it is tested without a kernel. `gadgetcast gadget up|down` is run by `gadgetcast-gadget.service`.
+- `media` — Pion WebRTC bridge: answers a paired client's `media-offer` (non-trickle) and forwards the on-air client's Opus RTP to an `AudioSink`; `GstSink` supervises a `gst-launch-1.0` pipeline playing it into the UAC2 gadget. `server.Options.Media` takes it as the `MediaBridge` interface.
 - `drift` — proportional control law mapping buffer fill fraction to a clamped resample ratio, for audio clock-drift compensation (stdlib `math` only).
 
 Dependency direction: `session` → {`core`, `signaling`, `pairing`, `switcher`}; `jitter` and `drift` import no internal packages. Avoid new cross-package coupling.

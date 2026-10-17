@@ -48,6 +48,7 @@ export function Header({ studio, backend, reason }: { studio: Studio; backend: B
       <div style={{ flex: 1 }} />
 
       <div style={{ display: "flex", flex: "0 0 auto", gap: "var(--sp-2)", padding: "0 var(--sp-3)", borderRight: "1px solid var(--line-hairline)" }}>
+        <Tooltip label="Send my mic to the USB host" side="bottom"><IconButton icon="mic" label="Send my mic" size="sm" onClick={() => act.setModal("sendmic")} data-testid="send-mic" /></Tooltip>
         <Tooltip label="Capture screenshot" shortcut="⇧C" side="bottom"><IconButton icon="photo_camera" label="Screenshot" size="sm" onClick={() => act.openCapture("screenshot")} /></Tooltip>
         <Tooltip label="Record a clip" side="bottom"><IconButton icon="videocam" label="Record clip" size="sm" onClick={() => act.openCapture("video")} /></Tooltip>
         <Tooltip label="Capture audio clip" side="bottom"><IconButton icon="graphic_eq" label="Audio clip" size="sm" onClick={() => act.openCapture("audio")} /></Tooltip>

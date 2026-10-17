@@ -8,7 +8,7 @@ import { graphProblems } from "../graph/validate";
 
 export type View = "canvas" | "mixer" | "diag" | "hardware";
 export type RailMode = "nodes" | "library" | "devices" | "help";
-export type ModalKind = null | "settings" | "keys" | "save" | "config" | "delete" | "discard" | "capture";
+export type ModalKind = null | "settings" | "keys" | "save" | "config" | "delete" | "discard" | "capture" | "sendmic";
 export type CaptureMode = "screenshot" | "video" | "audio";
 export type Theme = "light" | "dark";
 export interface ToastMsg { id: number; msg: string; icon?: string; tone: ToastTone }
