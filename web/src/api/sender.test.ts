@@ -19,8 +19,10 @@ class FakePeer implements SenderPeer {
   iceGatheringState = "new";
   onicegatheringstatechange: (() => void) | null = null;
   transceivers = 0;
+  directions: string[] = [];
+  ontrack: ((ev: { track: MediaStreamTrack }) => void) | null = null;
   get localDescription() { return this.local; }
-  addTransceiver() { this.transceivers++; return {}; }
+  addTransceiver(_: unknown, init: { direction: string }) { this.transceivers++; this.directions.push(init.direction); return {}; }
   async createOffer() { return { type: "offer", sdp: "v=0 offer" }; }
   async setLocalDescription(d: { sdp?: string }) {
     this.local = { sdp: (d.sdp ?? "") + " +candidates" };
@@ -31,12 +33,12 @@ class FakePeer implements SenderPeer {
 }
 
 function fakeStream() {
-  const track = { stopped: false, stop() { this.stopped = true; } };
-  const video = { stopped: false, stop() { this.stopped = true; }, ended: null as null | (() => void), addEventListener(_: string, f: () => void) { this.ended = f; } };
+  const track = { kind: "audio", stopped: false, stop() { this.stopped = true; } };
+  const video = { kind: "video", stopped: false, stop() { this.stopped = true; }, ended: null as null | (() => void), addEventListener(_: string, f: () => void) { this.ended = f; } };
   return { track, video, stream: { getTracks: () => [track, video] } as unknown as MediaStream };
 }
 
-function setup(opts: { micError?: Error } = {}) {
+function setup(opts: { micError?: Error; play?: SenderDeps["play"] } = {}) {
   const sock = new FakeSocket();
   const peer = new FakePeer();
   const mic = fakeStream();
@@ -47,6 +49,7 @@ function setup(opts: { micError?: Error } = {}) {
     peer: () => peer,
     getMedia: () => (opts.micError ? Promise.reject(opts.micError) : Promise.resolve(mic.stream)),
     gatherTimeoutMs: 50,
+    play: opts.play,
   };
   const stop = startMicSender(deps, "1234", { onState: (s, d) => states.push([s, d]) }, "mic-abc");
   return { sock, peer, mic, states, stop };
@@ -123,5 +126,25 @@ describe("startMicSender", () => {
     sock.onopen?.();
     mic.video.ended?.();
     expect(last(states)).toEqual(["error", "The shared screen or camera was stopped."]);
+  });
+
+  it("sends only, unless asked to play the host's audio", async () => {
+    const { peer, stop } = setup();
+    await tick(); await tick();
+    expect(peer.directions).toEqual(["sendonly", "sendonly"]);
+    expect(peer.ontrack).toBeNull();
+    stop();
+  });
+
+  it("plays the host's audio while sending, and stops it on stop", async () => {
+    const played: string[] = [];
+    const { peer, stop } = setup({ play: t => { played.push("play " + t.kind); return () => played.push("stop"); } });
+    await tick(); await tick();
+    expect(peer.directions).toEqual(["sendrecv", "sendonly"]);
+    peer.ontrack?.({ track: { kind: "video" } as MediaStreamTrack });
+    peer.ontrack?.({ track: { kind: "audio" } as MediaStreamTrack });
+    expect(played).toEqual(["play audio"]);
+    stop();
+    expect(played).toEqual(["play audio", "stop"]);
   });
 });

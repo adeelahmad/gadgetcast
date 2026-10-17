@@ -1,7 +1,7 @@
 /* Send this device's microphone, and optionally its camera or screen, to the Pi: the host computer sees them
    as the GadgetCast USB mic and webcam. */
 import { useEffect, useRef, useState } from "react";
-import { Badge, Button, Icon, Input, Modal, Tabs, type TabItem } from "../ds";
+import { Badge, Button, Icon, Input, Modal, Switch, Tabs, type TabItem } from "../ds";
 import { wsUrl } from "../api/events";
 import { startMicSender, type SendState, type SenderPeer, type SenderSocket } from "../api/sender";
 
@@ -35,12 +35,30 @@ async function openSource(src: SendSource): Promise<MediaStream> {
   }
 }
 
+/* Plays the host's audio. The element starts playing inside the Start tap, because phones only allow
+   audio playback from a user gesture; the track arrives later. */
+function hostAudioPlayer(): (track: MediaStreamTrack) => () => void {
+  const stream = new MediaStream();
+  const audio = new Audio();
+  audio.srcObject = stream;
+  void audio.play().catch(() => { /* retried when the track arrives */ });
+  return track => {
+    stream.addTrack(track);
+    void audio.play().catch(() => { /* the browser blocked autoplay */ });
+    return () => { audio.pause(); stream.removeTrack(track); };
+  };
+}
+
+export const HEAR_LABEL = "Play the computer's sound here";
+export const HEAR_HINT = "Hear the call through this device. Use headphones to avoid echo.";
+
 const LABEL: Record<SendState, string> = { idle: "Off", connecting: "Connecting", "on-air": "On air", error: "Stopped", stopped: "Off" };
 
 /** Sender state shared by the Studio dialog and the phone page (/send). */
 export function useMicSender() {
   const [pin, setPin] = useState(readPin);
   const [source, setSource] = useState<SendSource>("mic");
+  const [hear, setHear] = useState(false);
   const [state, setState] = useState<SendState>("idle");
   const [detail, setDetail] = useState<string | undefined>();
   const stopRef = useRef<(() => void) | null>(null);
@@ -57,16 +75,17 @@ export function useMicSender() {
       socket: url => new WebSocket(url) as unknown as SenderSocket,
       peer: () => new RTCPeerConnection() as unknown as SenderPeer,
       getMedia: () => openSource(source),
+      play: hear ? hostAudioPlayer() : undefined,
     }, pin.trim(), { onState: (s, d) => { setState(s); setDetail(d); } });
   };
   const stop = () => { stopRef.current?.(); stopRef.current = null; };
-  return { pin, setPin, source, setSource, state, detail, supported, busy, start, stop };
+  return { pin, setPin, source, setSource, hear, setHear, state, detail, supported, busy, start, stop };
 }
 
 export const STATE_LABEL = LABEL;
 
 export function SendMic({ live, onClose }: { live: boolean; onClose: () => void }) {
-  const { pin, setPin, source, setSource, state, detail, supported, busy, start, stop } = useMicSender();
+  const { pin, setPin, source, setSource, hear, setHear, state, detail, supported, busy, start, stop } = useMicSender();
   const close = () => { stop(); onClose(); };
 
   const why = !live ? "Connect to a GadgetCast Pi to send audio; the offline demo has no device."
@@ -86,6 +105,7 @@ export function SendMic({ live, onClose }: { live: boolean; onClose: () => void 
       {!busy ? <Tabs<SendSource> size="sm" value={source} onChange={setSource} items={sourceItems()} /> : null}
       <Input label="Pairing PIN" value={pin} onChange={e => setPin(e.target.value)} inputMode="numeric" autoComplete="one-time-code" mono
         hint="Printed by the installer, and in gadgetcast-pin.txt on the SD card" disabled={busy} />
+      <Switch checked={hear} onChange={setHear} disabled={busy} label={HEAR_LABEL} description={HEAR_HINT} />
       <div role="status" aria-live="polite" style={{ display: "flex", alignItems: "center", gap: "var(--sp-4)" }}>
         <Badge tone={state === "on-air" ? "live" : state === "error" ? "err" : "neutral"} dot solid={state === "on-air"}>{LABEL[state]}</Badge>
         <span style={{ font: "var(--type-meta)", color: state === "error" ? "var(--st-err)" : "var(--text-muted)" }}>

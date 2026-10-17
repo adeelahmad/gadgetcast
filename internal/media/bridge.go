@@ -49,22 +49,28 @@ type Options struct {
 	// Video receives the on-air client's H.264 (VideoPT) or VP8 (VP8PT) RTP.
 	// Nil ignores video.
 	Video Sink
+	// Speaker sends the host's audio (WriteSpeakerRTP) back to the on-air
+	// client, when its offer asks to receive audio.
+	Speaker bool
 }
 
 // Bridge holds one PeerConnection per client.
 type Bridge struct {
-	api   *webrtc.API
-	sink  AudioSink
-	video Sink
+	api     *webrtc.API
+	sink    AudioSink
+	video   Sink
+	speaker bool
 
 	mu    sync.Mutex
 	peers map[core.ClientID]*webrtc.PeerConnection
 	vssrc map[core.ClientID]uint32 // each client's video SSRC, for keyframe requests
+	spk   map[core.ClientID]*webrtc.TrackLocalStaticRTP
 	onAir core.ClientID
 	live  bool
 
 	forwarded      atomic.Uint64
 	forwardedVideo atomic.Uint64
+	sentSpeaker    atomic.Uint64
 }
 
 // New builds a Bridge that accepts Opus audio and writes the on-air
@@ -104,7 +110,8 @@ func New(sink AudioSink, opts Options) (*Bridge, error) {
 		se.SetICEMulticastDNSMode(ice.MulticastDNSModeQueryOnly)
 	}
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(me), webrtc.WithSettingEngine(se))
-	return &Bridge{api: api, sink: sink, video: opts.Video, peers: map[core.ClientID]*webrtc.PeerConnection{}, vssrc: map[core.ClientID]uint32{}}, nil
+	return &Bridge{api: api, sink: sink, video: opts.Video, speaker: opts.Speaker, peers: map[core.ClientID]*webrtc.PeerConnection{},
+		vssrc: map[core.ClientID]uint32{}, spk: map[core.ClientID]*webrtc.TrackLocalStaticRTP{}}, nil
 }
 
 // Offer answers a client's SDP offer. ICE is not trickled: the answer carries
@@ -140,6 +147,13 @@ func (b *Bridge) Offer(id core.ClientID, sdp string) (string, error) {
 		pc.Close()
 		return "", fmt.Errorf("media: bad offer: %w", err)
 	}
+	var spk *webrtc.TrackLocalStaticRTP
+	if b.speaker && wantsAudio(sdp) {
+		if spk, err = b.addSpeaker(pc); err != nil {
+			pc.Close()
+			return "", err
+		}
+	}
 	answer, err := pc.CreateAnswer(nil)
 	if err != nil {
 		pc.Close()
@@ -155,12 +169,82 @@ func (b *Bridge) Offer(id core.ClientID, sdp string) (string, error) {
 	b.mu.Lock()
 	old := b.peers[id]
 	b.peers[id] = pc
+	if spk != nil {
+		b.spk[id] = spk
+	} else {
+		delete(b.spk, id)
+	}
 	b.mu.Unlock()
 	if old != nil {
 		old.Close()
 	}
 	return pc.LocalDescription().SDP, nil
 }
+
+// wantsAudio reports whether an offer's audio section accepts media from us
+// (sendrecv or recvonly). Older clients offer sendonly and get no speaker.
+func wantsAudio(offer string) bool {
+	d := webrtc.SessionDescription{Type: webrtc.SDPTypeOffer, SDP: offer}
+	sd, err := d.Unmarshal()
+	if err != nil {
+		return false
+	}
+	for _, m := range sd.MediaDescriptions {
+		if m.MediaName.Media != "audio" {
+			continue
+		}
+		for _, a := range m.Attributes {
+			if a.Key == "sendrecv" || a.Key == "recvonly" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// addSpeaker attaches an Opus track carrying the host's audio to pc.
+func (b *Bridge) addSpeaker(pc *webrtc.PeerConnection) (*webrtc.TrackLocalStaticRTP, error) {
+	t, err := webrtc.NewTrackLocalStaticRTP(webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeOpus, ClockRate: 48000, Channels: 2}, "speaker", "gadgetcast")
+	if err != nil {
+		return nil, err
+	}
+	sender, err := pc.AddTrack(t)
+	if err != nil {
+		return nil, fmt.Errorf("media: speaker track: %w", err)
+	}
+	go func() { // drain RTCP so the interceptors keep running
+		buf := make([]byte, 1500)
+		for {
+			if _, _, err := sender.Read(buf); err != nil {
+				return
+			}
+		}
+	}()
+	return t, nil
+}
+
+// WriteSpeakerRTP sends one Opus RTP packet of the host's audio to the
+// on-air client, if it asked for it. Payload type and SSRC are rewritten
+// per connection.
+func (b *Bridge) WriteSpeakerRTP(pkt []byte) error {
+	b.mu.Lock()
+	var t *webrtc.TrackLocalStaticRTP
+	if b.live {
+		t = b.spk[b.onAir]
+	}
+	b.mu.Unlock()
+	if t == nil {
+		return nil
+	}
+	if _, err := t.Write(pkt); err != nil {
+		return err
+	}
+	b.sentSpeaker.Add(1)
+	return nil
+}
+
+// SentSpeaker counts host audio packets sent to the on-air client.
+func (b *Bridge) SentSpeaker() uint64 { return b.sentSpeaker.Load() }
 
 // pump forwards a track's packets to sink while its client is on air.
 func (b *Bridge) pump(id core.ClientID, t *webrtc.TrackRemote, sink Sink, pt byte, count *atomic.Uint64) {
@@ -234,6 +318,7 @@ func (b *Bridge) Drop(id core.ClientID) {
 	pc := b.peers[id]
 	delete(b.peers, id)
 	delete(b.vssrc, id)
+	delete(b.spk, id)
 	b.mu.Unlock()
 	if pc != nil {
 		pc.Close()
@@ -245,6 +330,7 @@ func (b *Bridge) Close() {
 	b.mu.Lock()
 	peers := b.peers
 	b.peers = map[core.ClientID]*webrtc.PeerConnection{}
+	b.spk = map[core.ClientID]*webrtc.TrackLocalStaticRTP{}
 	b.mu.Unlock()
 	for _, pc := range peers {
 		pc.Close()
