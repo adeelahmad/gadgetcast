@@ -10,7 +10,7 @@ Thanks for helping. The most useful contributions right now are hardware reports
 
 ## Development
 
-You need Go 1.22 or newer. Node 22 is needed only if you work on the web UI in `web/`.
+You need Go 1.25 or newer. Node 22 is needed only if you work on the web UI in `web/`.
 
 ```console
 git clone https://github.com/adeelahmad/gadgetcast && cd gadgetcast
