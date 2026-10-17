@@ -6,6 +6,7 @@ import logoDark from "./ds/assets/logo-dark.svg";
 import logo from "./ds/assets/logo.svg";
 import { selectBackend, type Selection } from "./api";
 import { App } from "./app/App";
+import { SendPage } from "./app/SendPage";
 
 function Root() {
   const [sel, setSel] = useState<Selection | null>(null);
@@ -27,4 +28,6 @@ function Root() {
   return <App backend={sel.backend} reason={sel.reason} />;
 }
 
-createRoot(document.getElementById("root")!).render(<StrictMode><Root /></StrictMode>);
+// /send is the phone sender: it needs no Studio data, so it skips backend selection.
+const isSend = window.location.pathname.replace(/\/+$/, "") === "/send";
+createRoot(document.getElementById("root")!).render(<StrictMode>{isSend ? <SendPage /> : <Root />}</StrictMode>);
