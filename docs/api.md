@@ -58,5 +58,5 @@ type Client = { id: string; onAir: boolean };
 - Media to the Pi itself: a joined, paired client sends `{"type":"media-offer","payload":{"sdp":"…"}}`
   and gets `{"type":"media-answer","payload":{"sdp":"…"}}`. ICE is not trickled: the offer must carry all
   of the browser's candidates (wait for gathering to complete) and the answer carries all of the Pi's.
-  The Pi accepts Opus audio and H.264 or VP8 video (H.264 preferred); only the on-air client's media (`switch-source`) is played into the USB mic and webcam.
+  The Pi accepts Opus audio and H.264 or VP8 video (H.264 preferred); only the on-air client's media (`switch-source`) is played into the USB mic and webcam. If the offer's audio is `sendrecv`, the answer adds an Opus track carrying the host's audio (the USB speaker), sent only while that client is on air.
   Unpaired or unjoined clients get an `error` frame.

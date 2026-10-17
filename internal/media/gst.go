@@ -197,6 +197,59 @@ func (g *GstSink) Run(ctx context.Context) {
 	}
 }
 
+// DefaultSpeakerDevice is the UAC2 gadget's capture device: what the host
+// plays to the GadgetCast speaker.
+const DefaultSpeakerDevice = "plughw:UAC2Gadget"
+
+// GstSpeakerPipeline captures the host's audio from the UAC2 gadget and
+// sends it as Opus RTP (AudioPT, 20 ms frames) to a local UDP port.
+func GstSpeakerPipeline(port int, device string, _ int) []string {
+	p := fmt.Sprintf("alsasrc device=%s buffer-time=40000 latency-time=10000 "+
+		"! audioconvert ! audioresample ! audio/x-raw,rate=48000,channels=2 "+
+		"! opusenc bitrate=96000 frame-size=20 ! rtpopuspay pt=%d "+
+		"! udpsink host=127.0.0.1 port=%d sync=false async=false", device, AudioPT, port)
+	return append([]string{"-q"}, strings.Fields(p)...)
+}
+
+// GstSource reads RTP from a supervised gst-launch-1.0 process.
+type GstSource struct {
+	g *GstSink // supervision; its conn is the UDP socket the pipeline sends to
+}
+
+// NewGstSource binds a local UDP port for the speaker pipeline. Call Run to
+// start it.
+func NewGstSource(device string, logger *log.Logger) (*GstSource, error) {
+	if device == "" {
+		device = DefaultSpeakerDevice
+	}
+	conn, err := net.ListenUDP("udp", &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1)})
+	if err != nil {
+		return nil, err
+	}
+	if logger == nil {
+		logger = log.New(nopWriter{}, "", 0)
+	}
+	g := &GstSink{conn: conn, port: conn.LocalAddr().(*net.UDPAddr).Port, device: device, kind: "speaker", pipeline: GstSpeakerPipeline,
+		cmd: "gst-launch-1.0", sysRoot: "/sys", logger: logger, restart: make(chan struct{}, 1)}
+	return &GstSource{g: g}, nil
+}
+
+// Run keeps the pipeline running until ctx ends and hands each packet to
+// write.
+func (s *GstSource) Run(ctx context.Context, write func(pkt []byte) error) {
+	go func() {
+		buf := make([]byte, 1500)
+		for {
+			n, err := s.g.conn.Read(buf)
+			if err != nil {
+				return // closed by Run's supervisor on exit
+			}
+			_ = write(buf[:n])
+		}
+	}()
+	s.g.Run(ctx)
+}
+
 type nopWriter struct{}
 
 func (nopWriter) Write(p []byte) (int, error) { return len(p), nil }

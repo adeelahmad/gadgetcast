@@ -1,11 +1,11 @@
 /* /send: a one-screen page for phones. Enter the PIN, tap once, and the host hears this phone's mic. */
 import logo from "../ds/assets/logo.svg";
 import logoDark from "../ds/assets/logo-dark.svg";
-import { Badge, Button, Input, Tabs } from "../ds";
-import { STATE_LABEL, sourceItems, useMicSender, type SendSource } from "./SendMic";
+import { Badge, Button, Input, Switch, Tabs } from "../ds";
+import { HEAR_HINT, HEAR_LABEL, STATE_LABEL, sourceItems, useMicSender, type SendSource } from "./SendMic";
 
 export function SendPage() {
-  const { pin, setPin, source, setSource, state, detail, supported, busy, start, stop } = useMicSender();
+  const { pin, setPin, source, setSource, hear, setHear, state, detail, supported, busy, start, stop } = useMicSender();
   const dark = document.documentElement.getAttribute("data-theme") === "dark";
   const msg = !supported ? "This browser cannot send audio. Use Chrome, Safari or Firefox over https://."
     : detail ?? (state === "on-air" ? (source === "mic" ? "The computer is hearing this phone." : "The computer is seeing and hearing this phone.") + " Keep this page open." : state === "connecting" ? "Connecting…" : state === "error" ? "" : "Pick GadgetCast as the microphone or camera on the computer.");
@@ -16,6 +16,7 @@ export function SendPage() {
         <h1 style={{ margin: 0, textAlign: "center", font: "var(--type-title, var(--type-ui))", fontSize: 22, color: "var(--text-primary)" }}>Use this phone as a webcam or mic</h1>
         {!busy ? <Tabs<SendSource> size="sm" value={source} onChange={setSource} items={sourceItems()} /> : null}
         <Input label="Pairing PIN" value={pin} onChange={e => setPin(e.target.value)} inputMode="numeric" autoComplete="one-time-code" mono size="lg" disabled={busy} />
+        <Switch checked={hear} onChange={setHear} disabled={busy} label={HEAR_LABEL} description={HEAR_HINT} />
         {busy ? <Button variant="danger" size="lg" icon="stop" onClick={stop}>Stop</Button>
           : <Button variant="live" size="lg" icon="mic" onClick={start} disabled={!supported || pin.trim() === ""}>Start sending</Button>}
         <div role="status" aria-live="polite" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--sp-4)", textAlign: "center" }}>

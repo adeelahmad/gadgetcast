@@ -50,6 +50,7 @@ func run() error {
 		showVer    = flag.Bool("version", false, "print the version and exit")
 		audioDev   = flag.String("audio-device", media.DefaultALSADevice, "ALSA device the on-air client's audio is played to (the USB mic)")
 		videoDev   = flag.String("video-device", media.AutoUVCDevice, "V4L2 node of the USB webcam gadget the on-air client's video is played to (\"auto\" finds it)")
+		speakerDev = flag.String("speaker-device", media.DefaultSpeakerDevice, "ALSA device the host's audio is captured from (the USB speaker) and sent to the on-air client")
 	)
 	flag.Parse()
 	if *showVer {
@@ -103,11 +104,16 @@ func run() error {
 		return err
 	}
 	go vsink.Run(ctx)
-	bridge, err := media.New(sink, media.Options{Video: vsink})
+	bridge, err := media.New(sink, media.Options{Video: vsink, Speaker: true})
 	if err != nil {
 		return err
 	}
 	defer bridge.Close()
+	speaker, err := media.NewGstSource(*speakerDev, logger)
+	if err != nil {
+		return err
+	}
+	go speaker.Run(ctx, bridge.WriteSpeakerRTP)
 
 	opts := server.Options{
 		DataDir:         *dataDir,

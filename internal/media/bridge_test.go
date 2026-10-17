@@ -3,8 +3,10 @@ package media
 import (
 	"context"
 	"log"
+	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -441,4 +443,135 @@ func TestGstVideoSinkRestartsOnCodecChange(t *testing.T) {
 	if len(runs) != 2 || !strings.Contains(runs[0], "h264parse") || !strings.Contains(runs[1], "vp8dec") {
 		t.Errorf("runs:\n%s", b)
 	}
+}
+
+// listener is a browser that sends Opus and plays what the Pi sends back.
+func listener(t *testing.T, b *Bridge, id core.ClientID, dir webrtc.RTPTransceiverDirection) (*webrtc.TrackLocalStaticSample, *countSink, string) {
+	t.Helper()
+	var se webrtc.SettingEngine
+	se.SetICEMulticastDNSMode(ice.MulticastDNSModeDisabled)
+	me := &webrtc.MediaEngine{}
+	if err := me.RegisterDefaultCodecs(); err != nil {
+		t.Fatal(err)
+	}
+	pc, err := webrtc.NewAPI(webrtc.WithMediaEngine(me), webrtc.WithSettingEngine(se)).NewPeerConnection(webrtc.Configuration{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { pc.Close() })
+	track, err := webrtc.NewTrackLocalStaticSample(webrtc.RTPCodecCapability{MimeType: webrtc.MimeTypeOpus, ClockRate: 48000, Channels: 2}, "audio", "mic")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pc.AddTransceiverFromTrack(track, webrtc.RTPTransceiverInit{Direction: dir}); err != nil {
+		t.Fatal(err)
+	}
+	heard := &countSink{}
+	pc.OnTrack(func(r *webrtc.TrackRemote, _ *webrtc.RTPReceiver) {
+		buf := make([]byte, 1500)
+		for {
+			if _, _, err := r.Read(buf); err != nil {
+				return
+			}
+			_ = heard.WriteRTP(nil)
+		}
+	})
+	offer, err := pc.CreateOffer(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g := webrtc.GatheringCompletePromise(pc)
+	if err := pc.SetLocalDescription(offer); err != nil {
+		t.Fatal(err)
+	}
+	<-g
+	answer, err := b.Offer(id, pc.LocalDescription().SDP)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := pc.SetRemoteDescription(webrtc.SessionDescription{Type: webrtc.SDPTypeAnswer, SDP: answer}); err != nil {
+		t.Fatal(err)
+	}
+	return track, heard, answer
+}
+
+func TestSpeakerReachesOnlyOnAirListener(t *testing.T) {
+	b, err := New(&countSink{}, Options{DisableMDNS: true, Speaker: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer b.Close()
+	alice, bob, carol := cid("alice"), cid("bob"), cid("carol")
+	stop := make(chan struct{})
+	defer close(stop)
+	at, aliceHeard, answer := listener(t, b, alice, webrtc.RTPTransceiverDirectionSendrecv)
+	if !strings.Contains(answer, "a=sendrecv") {
+		t.Fatalf("answer to a sendrecv offer does not send:\n%s", answer)
+	}
+	bt, bobHeard, _ := listener(t, b, bob, webrtc.RTPTransceiverDirectionSendrecv)
+	ct, carolHeard, answer := listener(t, b, carol, webrtc.RTPTransceiverDirectionSendonly)
+	if strings.Contains(answer, "a=sendrecv") {
+		t.Fatalf("answer to a sendonly offer sends:\n%s", answer)
+	}
+	for _, tr := range []*webrtc.TrackLocalStaticSample{at, bt, ct} {
+		go send(tr, stop)
+	}
+	go func() { // the host's audio: 20 ms Opus RTP
+		var seq uint16
+		for {
+			select {
+			case <-stop:
+				return
+			case <-time.After(20 * time.Millisecond):
+				seq++
+				pkt := []byte{0x80, AudioPT, byte(seq >> 8), byte(seq), 0, 0, byte(seq >> 8), byte(seq), 0, 0, 0, 1, 0xf8, 0xff, 0xfe}
+				_ = b.WriteSpeakerRTP(pkt)
+			}
+		}
+	}()
+
+	time.Sleep(300 * time.Millisecond)
+	if b.SentSpeaker() != 0 {
+		t.Fatalf("sent %d speaker packets with nobody on air", b.SentSpeaker())
+	}
+	b.SetOnAir(alice, true)
+	waitFor(t, "alice hearing the host", func() bool { return aliceHeard.count() >= 10 })
+	b.SetOnAir(carol, true) // carol didn't ask for audio
+	time.Sleep(300 * time.Millisecond)
+	if bobHeard.count() != 0 || carolHeard.count() != 0 {
+		t.Errorf("off-air or sendonly clients heard the host: bob %d, carol %d", bobHeard.count(), carolHeard.count())
+	}
+	b.Drop(alice)
+	b.SetOnAir(bob, true)
+	waitFor(t, "bob hearing the host", func() bool { return bobHeard.count() >= 10 })
+}
+
+func TestGstSourceDeliversPackets(t *testing.T) {
+	args := strings.Join(GstSpeakerPipeline(5008, "hw:Y", 0), " ")
+	for _, want := range []string{"alsasrc device=hw:Y", "opusenc", "pt=111", "port=5008"} {
+		if !strings.Contains(args, want) {
+			t.Errorf("speaker pipeline lacks %q: %s", want, args)
+		}
+	}
+	s, err := NewGstSource("", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if s.g.device != DefaultSpeakerDevice {
+		t.Errorf("device = %q", s.g.device)
+	}
+	s.g.cmd = "sleep" // stands in for gst-launch: we send the packets ourselves
+	s.g.pipeline = func(int, string, int) []string { return []string{"60"} }
+	got := &countSink{}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan struct{})
+	go func() { s.Run(ctx, got.WriteRTP); close(done) }()
+	c, err := net.Dial("udp", "127.0.0.1:"+strconv.Itoa(s.g.port))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Close()
+	waitFor(t, "packets from the pipeline", func() bool { _, _ = c.Write([]byte{0x80, AudioPT}); return got.count() >= 3 })
+	cancel()
+	<-done
 }

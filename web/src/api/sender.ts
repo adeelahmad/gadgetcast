@@ -16,7 +16,8 @@ export interface SenderSocket {
 
 /** The subset of RTCPeerConnection the sender uses. */
 export interface SenderPeer {
-  addTransceiver(track: MediaStreamTrack, init: { direction: "sendonly"; streams?: MediaStream[] }): unknown;
+  addTransceiver(track: MediaStreamTrack, init: { direction: "sendonly" | "sendrecv"; streams?: MediaStream[] }): unknown;
+  ontrack: ((ev: { track: MediaStreamTrack }) => void) | null;
   createOffer(): Promise<{ type: string; sdp?: string }>;
   setLocalDescription(d: { type: string; sdp?: string }): Promise<void>;
   setRemoteDescription(d: { type: "answer"; sdp: string }): Promise<void>;
@@ -34,6 +35,9 @@ export interface SenderDeps {
   url: string;
   /** Max wait for ICE gathering before sending what we have. */
   gatherTimeoutMs?: number;
+  /** When set, the Pi sends the host computer's audio (its USB speaker) back while we are on air, and this
+      plays it; the returned function stops playback. */
+  play?(track: MediaStreamTrack): () => void;
 }
 
 export interface SenderEvents {
@@ -59,8 +63,11 @@ export function startMicSender(deps: SenderDeps, pin: string, ev: SenderEvents, 
   let ws: SenderSocket | null = null;
   let pc: SenderPeer | null = null;
   let stream: MediaStream | null = null;
+  let stopPlaying: (() => void) | null = null;
 
   const cleanup = () => {
+    stopPlaying?.();
+    stopPlaying = null;
     stream?.getTracks().forEach(t => t.stop());
     pc?.close();
     if (ws) { ws.onclose = null; ws.close(); }
@@ -90,7 +97,9 @@ export function startMicSender(deps: SenderDeps, pin: string, ev: SenderEvents, 
     for (const t of tracks) t.addEventListener?.("ended", () => fail("The shared screen or camera was stopped."));
 
     pc = deps.peer();
-    for (const t of tracks) pc.addTransceiver(t, { direction: "sendonly", streams: [stream] });
+    const play = deps.play;
+    for (const t of tracks) pc.addTransceiver(t, { direction: play && t.kind === "audio" ? "sendrecv" : "sendonly", streams: [stream] });
+    if (play) pc.ontrack = e => { if (e.track.kind === "audio" && !stopped) { stopPlaying?.(); stopPlaying = play(e.track); } };
     try {
       await pc.setLocalDescription(await pc.createOffer());
       await waitForGathering(pc, deps.gatherTimeoutMs ?? 3000);
