@@ -1,6 +1,7 @@
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { Icon } from "../core/Icon";
 import { Badge, type BadgeTone } from "../core/Badge";
+import { clickable } from "../a11y/clickable";
 
 /* ── LogStream ── mono tail; follows the end while `follow` is on. */
 export type LogLevel = "info" | "ok" | "warn" | "err" | "dbg";
@@ -30,8 +31,7 @@ export interface PresetRowProps { name: string; meta?: ReactNode; icon?: string;
 
 export function PresetRow({ name, meta, icon = "account_tree", selected = false, running = false, isDefault = false, actions, onClick, style }: PresetRowProps) {
   return (
-    <div className="gc-row" data-selected={selected ? "true" : "false"} onClick={onClick} role="button" tabIndex={0}
-      onKeyDown={e => { if (e.key === "Enter" && e.target === e.currentTarget) onClick?.(); }}
+    <div className="gc-row" data-selected={selected ? "true" : "false"} onClick={onClick} {...clickable(onClick, selected)}
       style={{ display: "flex", alignItems: "center", gap: "var(--sp-4)", padding: "var(--sp-4) var(--sp-5)", borderRadius: "var(--r-sm)", cursor: "pointer", borderLeft: "2px solid " + (running ? "var(--sig-live)" : selected ? "var(--brand)" : "transparent"), ...style }}>
       <Icon name={icon} size="sm" style={{ color: running ? "var(--sig-live)" : "var(--text-faint)" }} />
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 1 }}>
@@ -53,7 +53,7 @@ export interface DeviceRowProps { name: string; detail?: ReactNode; icon?: strin
 export function DeviceRow({ name, detail, icon = "usb", transport, status = "online", statusLabel, trailing, onClick, selected = false, style }: DeviceRowProps) {
   const s = ST[status];
   return (
-    <div className="gc-row" data-selected={selected ? "true" : "false"} onClick={onClick}
+    <div className="gc-row" data-selected={selected ? "true" : "false"} onClick={onClick} {...clickable(onClick, selected)}
       style={{ display: "flex", alignItems: "center", gap: "var(--sp-4)", padding: "var(--sp-4) var(--sp-5)", borderBottom: "1px solid var(--line-hairline)", cursor: onClick ? "pointer" : "default", ...style }}>
       <span style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 24, height: 24, flex: "0 0 auto", background: "var(--surface-raised)", border: "1px solid var(--line-border)", borderRadius: "var(--r-sm)" }}>
         <Icon name={icon} size="sm" style={{ color: "var(--text-muted)" }} />
@@ -96,7 +96,7 @@ export function Table<R>({ columns, rows, rowKey, selectedKey, onSelect, rail, d
               const sel = selectedKey !== undefined && selectedKey === key;
               const railTone = rail ? rail(r) : null;
               return (
-                <tr key={key} className="gc-row" data-selected={sel ? "true" : "false"} onClick={onSelect ? () => onSelect(key, r) : undefined}
+                <tr key={key} className="gc-row" data-selected={sel ? "true" : "false"} onClick={onSelect ? () => onSelect(key, r) : undefined} {...clickable(onSelect ? () => onSelect(key, r) : undefined)} role={undefined} aria-selected={onSelect ? sel : undefined}
                   style={{ height: h, borderBottom: "1px solid var(--line-hairline)", cursor: onSelect ? "pointer" : "default" }}>
                   {columns.map((c, ci) => {
                     const v = c.render ? c.render(r) : c.key ? (r[c.key] as ReactNode) : null;
