@@ -208,9 +208,15 @@ func (OS) Mkdir(p string) error { return os.MkdirAll(p, 0o755) }
 func (OS) WriteFile(p, data string) error {
 	return os.WriteFile(p, []byte(data+"\n"), 0o644)
 }
+
+// Symlink makes a relative target absolute because configfs resolves link
+// targets against the working directory, not the link's own directory.
 func (OS) Symlink(target, p string) error {
 	if err := os.MkdirAll(filepath.Dir(p), 0o755); err != nil {
 		return err
+	}
+	if !filepath.IsAbs(target) {
+		target = filepath.Join(filepath.Dir(p), target)
 	}
 	return os.Symlink(target, p)
 }

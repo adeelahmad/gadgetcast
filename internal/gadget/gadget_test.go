@@ -259,6 +259,23 @@ func TestUpOnRealFilesystemResolvesLinks(t *testing.T) {
 	}
 }
 
+// configfs resolves a symlink target against the caller's working directory,
+// not the link's directory, so OS must write relative targets as absolute.
+func TestOSSymlinkWritesAbsoluteTarget(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "header/h"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(root, "class/fs/h")
+	if err := (OS{}).Symlink("../../header/h", link); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.Readlink(link)
+	if want := filepath.Join(root, "header/h"); err != nil || got != want {
+		t.Fatalf("link target = %q, %v; want %q", got, err, want)
+	}
+}
+
 func TestFindUDC(t *testing.T) {
 	dir := t.TempDir()
 	if _, err := FindUDC(dir); err == nil || !strings.Contains(err.Error(), "dr_mode=peripheral") {
