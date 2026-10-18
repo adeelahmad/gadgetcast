@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { NodeGroup } from "../api/types";
 import { indexCatalog, type GraphDoc } from "./model";
-import { connectionError, graphProblems, lookupFor } from "./validate";
+import { connectionError, graphProblems, lookupFor, patchTargets } from "./validate";
 
 const groups: NodeGroup[] = [{
   group: "Test", items: [
@@ -71,5 +71,17 @@ describe("graphProblems", () => {
     expect(p).toHaveLength(2);
     expect(p[0]).toMatch(/^x1: /);
     expect(p[1]).toBe("x2: A node cannot patch into itself");
+  });
+});
+
+describe("patchTargets: inputs an output may be patched to without a pointer", () => {
+  it("lists only free inputs of the same kind on other nodes, labelled by node and port", () => {
+    expect(patchTargets(doc, catalog, "a", 0)).toEqual([{ node: "b", port: 0, label: "Encoder (b) · Raw" }]);
+    expect(patchTargets(doc, catalog, "a", 1)).toEqual([{ node: "d", port: 0, label: "UAC2 (d) · PCM" }]);
+  });
+
+  it("offers nothing when every matching input is taken or the port does not exist", () => {
+    expect(patchTargets(doc, catalog, "b", 0)).toEqual([]);
+    expect(patchTargets(doc, catalog, "a", 5)).toEqual([]);
   });
 });

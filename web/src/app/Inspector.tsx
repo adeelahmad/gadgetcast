@@ -1,6 +1,7 @@
 import { Button, Card, Icon, IconButton, Input, MetricPill, PortHandle, Select, Slider, Switch, WaveScope } from "../ds";
 import { cfgNum, cfgStr, sigTint, sigVar, URL_RULE, URL_TYPES, viewOf } from "./nodes";
 import type { Studio } from "./store";
+import { patchTargets } from "../graph/validate";
 
 export const VIDEO_FORMATS = ["MJPEG 1080p30", "MJPEG 720p30", "YUYV 480p30", "H.264 1080p30 (UVC 1.5)"];
 export const AI_MODELS = ["gemini-live-2.5-flash", "gemini-2.5-flash", "gemini-2.5-pro"];
@@ -14,7 +15,7 @@ export function Inspector({ studio, floating = false }: { studio: Studio; floati
     return (
       <aside style={{ width: "var(--w-inspector)", flex: "0 0 auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--sp-5)", padding: "var(--sp-9)", background: "var(--surface-panel)", borderLeft: "1px solid var(--line-border)", textAlign: "center" }}>
         <Icon name="touch_app" size="xl" style={{ color: "var(--text-faint)" }} />
-        <p style={{ font: "var(--type-body)", color: "var(--text-faint)" }}>Select a node to configure it. Drag from an output port to patch a cable; right-click a node for quick actions.</p>
+        <p style={{ font: "var(--type-body)", color: "var(--text-faint)" }}>Select a node to configure it. Drag from an output port to patch a cable (or use Patch in the inspector); right-click a node for quick actions.</p>
       </aside>
     );
   }
@@ -92,6 +93,15 @@ export function Inspector({ studio, floating = false }: { studio: Studio; floati
           {v.inputs.map((p, i) => <PortHandle key={"i" + i} kind={p.kind} direction="in" label={p.label + " in · " + p.kind} connected={s.doc.edges.some(e => e.to.node === n.id && e.to.port === i)} />)}
           {v.outputs.map((p, i) => <PortHandle key={"o" + i} kind={p.kind} direction="in" label={p.label + " out · " + p.kind} connected={s.doc.edges.some(e => e.from.node === n.id && e.from.port === i)} />)}
           {!v.inputs.length && !v.outputs.length ? <span style={{ font: "var(--type-meta)", color: "var(--text-faint)" }}>No ports</span> : null}
+          {/* Keyboard and screen-reader path to patching, which the canvas only offers by dragging. */}
+          {v.outputs.map((p, i) => {
+            const targets = patchTargets(s.doc, catalog, n.id, i);
+            return targets.length ? (
+              <Select key={"patch" + i} size="sm" label={"Patch " + p.label + " out to"} value=""
+                options={[{ value: "", label: "Choose an input…" }, ...targets.map(t => ({ value: t.node + ":" + t.port, label: t.label }))]}
+                onChange={e => { const t = targets.find(x => x.node + ":" + x.port === e.target.value); if (t) act.connect({ node: n.id, port: i }, { node: t.node, port: t.port }, p.kind); }} />
+            ) : null;
+          })}
         </div>
 
         <Switch checked={n.enabled} onChange={() => act.toggleNode(n.id)} label="Node enabled" description="Bypassed nodes keep their cables but pass nothing" />

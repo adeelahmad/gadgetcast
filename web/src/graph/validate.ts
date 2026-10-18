@@ -59,3 +59,17 @@ export function graphProblems(doc: GraphDoc, catalog: Catalog): string[] {
   });
   return problems;
 }
+
+export interface PatchTarget { node: string; port: number; label: string }
+
+/** Every input the given output may be patched to, for patching without a pointer (Inspector). */
+export function patchTargets(doc: GraphDoc, catalog: Catalog, nodeId: string, outPort: number): PatchTarget[] {
+  const lookup = lookupFor(doc, catalog), out: PatchTarget[] = [];
+  for (const n of doc.nodes) {
+    portsOf(n, catalog, doc.edges).inputs.forEach((p, port) => {
+      const c = { source: nodeId, sourceHandle: handleId("out", outPort), target: n.id, targetHandle: handleId("in", port) };
+      if (!connectionError(c, lookup, doc.edges)) out.push({ node: n.id, port, label: (catalog.get(n.type)?.title ?? n.type) + " (" + n.id + ") · " + p.label });
+    });
+  }
+  return out;
+}
