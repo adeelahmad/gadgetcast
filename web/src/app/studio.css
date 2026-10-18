@@ -14,6 +14,10 @@ html,body{height:100%;overflow:hidden}
 .react-flow__node-gc{padding:0;border:0;background:transparent;box-shadow:none;border-radius:0}
 .react-flow__node-gc.selected,.react-flow__node-gc:focus,.react-flow__node-gc:focus-visible{box-shadow:none;outline:none}
 .react-flow__edge-path{stroke:none}
+/* Keyboard focus must stay visible (WCAG 2.4.7): the rules above and React Flow's own
+   .selectable:focus-visible{outline:none} hide it, hence the extra .react-flow for specificity. */
+.react-flow .react-flow__node.react-flow__node-gc:focus-visible{outline:2px solid var(--brand);outline-offset:3px;border-radius:var(--r-md)}
+.react-flow__edge:focus-visible .gc-wire>path:first-child{stroke:var(--brand);stroke-opacity:.5;stroke-width:10px}
 
 /* Scrolling flex columns: children keep their natural height and the column scrolls. */
 .gc-stack>*{flex-shrink:0}
