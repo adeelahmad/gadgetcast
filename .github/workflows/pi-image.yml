@@ -63,6 +63,15 @@ jobs:
           echo "$ARCH" >"$files/ARCH"
           ls -l "$files"
 
+      # The action's own cleanup (increase-runner-disk-size) runs apt-get remove
+      # and fails the job when apt does (exit 100), so free space here instead.
+      - name: Free runner disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+            /opt/hostedtoolcache/CodeQL /usr/local/share/boost || true
+          sudo docker image prune --all --force || true
+          df -h /
+
       - uses: usimd/pi-gen-action@v1
         id: build
         with:
@@ -76,7 +85,7 @@ jobs:
           timezone: Etc/UTC
           compression: xz
           enable-cloud-init: 1
-          increase-runner-disk-size: true
+          increase-runner-disk-size: false
 
       - name: Attach image to release
         env:
