@@ -278,7 +278,9 @@ func TestOSSymlinkWritesAbsoluteTarget(t *testing.T) {
 
 func TestFindUDC(t *testing.T) {
 	dir := t.TempDir()
-	if _, err := FindUDC(dir); err == nil || !strings.Contains(err.Error(), "dr_mode=peripheral") {
+	// The overlay alone is not enough: Pi 1 B, 2 B, 3 B and 3 B+ have no
+	// device-capable port, so the message must name the boards that do.
+	if _, err := FindUDC(dir); err == nil || !strings.Contains(err.Error(), "dr_mode=peripheral") || !strings.Contains(err.Error(), "Zero") {
 		t.Fatalf("empty dir: err = %v", err)
 	}
 	if _, err := FindUDC(filepath.Join(dir, "missing")); err == nil {
