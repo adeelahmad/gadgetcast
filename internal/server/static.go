@@ -7,12 +7,14 @@ import (
 	"strings"
 )
 
-const noUINotice = `GadgetCast server ` + Version + `
+func noUINotice() string {
+	return `GadgetCast server ` + Version + `
 
 The Studio UI has not been built into this binary (web/dist/index.html is missing).
 Build the UI into web/dist and rebuild the server, or run the UI dev server
 against this API. The API is available under /api/ and signaling at /ws.
 `
+}
 
 // staticHandler serves the embedded SPA: real files as-is, any other path
 // falls back to index.html so client-side routes work on reload.
@@ -37,7 +39,7 @@ func (s *Server) staticHandler() http.Handler {
 		}
 		if index == nil {
 			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-			_, _ = w.Write([]byte(noUINotice))
+			_, _ = w.Write([]byte(noUINotice()))
 			return
 		}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")

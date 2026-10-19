@@ -77,7 +77,7 @@ jobs:
             out="dist/$target"
             mkdir -p "$out"
             CGO_ENABLED=0 GOOS=linux GOARCH="$goarch" GOARM="$goarm" \
-              go build -trimpath -ldflags "-s -w -X main.version=$VERSION" -o "$out/gadgetcast" ./cmd/gadgetcast
+              go build -trimpath -ldflags "-s -w -X github.com/adeelahmad/gadgetcast/internal/server.Version=${VERSION#v}" -o "$out/gadgetcast" ./cmd/gadgetcast
             cp install.sh "$out/"
             tar -czf "dist/gadgetcast_linux_$target.tar.gz" -C "$out" gadgetcast install.sh
           done

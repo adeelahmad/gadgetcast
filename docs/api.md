@@ -8,7 +8,7 @@ to its bundled mock data and shows an "offline / demo" badge.
 
 | Method | Path | Body / Response |
 | --- | --- | --- |
-| GET | `/api/health` | `{"ok":true,"version":"0.1.0"}` |
+| GET | `/api/health` | `{"ok":true,"version":"0.1.1"}` (the release tag without its "v"; `0.0.0-dev` in unstamped builds) |
 | GET | `/api/nodes` | `NodeGroup[]` — the node catalogue |
 | GET | `/api/pipelines` | `Pipeline[]` |
 | GET | `/api/pipelines/{id}` | `Pipeline` or 404 |
