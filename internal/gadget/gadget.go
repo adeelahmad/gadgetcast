@@ -274,7 +274,8 @@ func Down(x Executor, root string, s Spec) error {
 
 // FindUDC returns the first USB device controller in dir (normally
 // /sys/class/udc). It is empty when the Pi's USB port is not in peripheral
-// mode, which means dtoverlay=dwc2,dr_mode=peripheral is missing.
+// mode: dtoverlay=dwc2,dr_mode=peripheral is missing, or the board has no
+// device-capable port (Pi 1 B, 2 B, 3 B, 3 B+).
 func FindUDC(dir string) (string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -286,7 +287,8 @@ func FindUDC(dir string) (string, error) {
 	}
 	sort.Strings(names)
 	if len(names) == 0 {
-		return "", errors.New("gadget: no USB device controller found; enable dtoverlay=dwc2,dr_mode=peripheral and reboot")
+		return "", errors.New("gadget: no USB device controller found. Check that config.txt has dtoverlay=dwc2,dr_mode=peripheral under [all] and reboot. " +
+			"Only some boards can be a USB device: Pi Zero, Zero W and Zero 2 W (the USB data port, not PWR), Pi 4 and 5 (the USB-C port), and Pi A+/3 A+; Pi 1 B, 2 B, 3 B and 3 B+ cannot")
 	}
 	return names[0], nil
 }
