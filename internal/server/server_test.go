@@ -161,7 +161,7 @@ func TestHealth(t *testing.T) {
 	resp, body := e.do(t, "GET", "/api/health", nil)
 	wantStatus(t, resp, body, 200)
 	got := decode[map[string]any](t, body)
-	if got["ok"] != true || got["version"] != "0.1.0" {
+	if got["ok"] != true || got["version"] != Version {
 		t.Fatalf("health = %s", body)
 	}
 }

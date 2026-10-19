@@ -5,8 +5,9 @@ import (
 	"regexp"
 )
 
-// Version is the server version reported by /api/health.
-const Version = "0.1.0"
+// Version is the server version reported by /api/health, without the leading
+// "v". Release builds stamp it with -ldflags "-X <this package>.Version=1.2.3".
+var Version = "0.0.0-dev"
 
 // idPattern is the contract's id rule for path segments (docs/api.md).
 var idPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]{1,64}$`)
