@@ -27,6 +27,21 @@ jobs:
       - name: test
         run: go test -race -cover ./...
 
+  # Runs the exact gst-launch pipelines through real GStreamer (hardware sinks
+  # swapped for files), so a bad element or property fails here, not on a Pi.
+  gstreamer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav
+      - name: real pipelines
+        env:
+          GADGETCAST_GST: "1"
+        run: go test -run TestRealGst -v ./internal/media/
+
   # The original Pi Zero / Zero W is ARMv6 (ARM1176): run the suite on that CPU.
   go-armv6:
     runs-on: ubuntu-latest
